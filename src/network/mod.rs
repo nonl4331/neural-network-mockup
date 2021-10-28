@@ -124,7 +124,7 @@ impl Network {
 
                 for data in test_data.as_ref().unwrap() {
                     let output = self.forward(data.0.clone());
-                    if get_index_max(&output) == get_index_max(&data.1) {
+                    if max_index(&output) == max_index(&data.1) {
                         correct += 1;
                     }
                 }
@@ -143,13 +143,15 @@ impl Network {
     }
 }
 
-use std::cmp::Ordering;
-
-fn get_index_max(nets: &Vec<Float>) -> usize {
-    let index_of_max: Option<usize> = nets
-        .iter()
-        .enumerate()
-        .max_by(|(_, a), (_, b)| a.partial_cmp(b).unwrap_or(Ordering::Equal))
-        .map(|(index, _)| index);
-    index_of_max.unwrap()
+/// max() over a slice of floats, gets the index of a largest value
+fn max_index(nets: &[Float]) -> usize {
+    let mut max = Float::NEG_INFINITY;
+    let mut index = 0;
+    for (i, n) in nets.iter().enumerate() {
+        if *n > max {
+            index = i;
+            max = *n;
+        }
+    }
+    index
 }
