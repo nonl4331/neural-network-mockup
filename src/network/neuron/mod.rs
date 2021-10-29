@@ -1,17 +1,17 @@
-use crate::network::change::NeuronChange;
-use crate::network::Float;
+use crate::network::{change::NeuronChange, Float};
 
 pub mod activation_function;
 pub mod cost_function;
+pub mod initialisation;
 
 pub struct Neuron {
-    pub weights: Vec<Float>,
     pub bias: Float,
+    pub weights: Vec<Float>,
 }
 
 impl Neuron {
     pub fn new(weights: Vec<Float>, bias: Float) -> Self {
-        Neuron { weights, bias }
+        Neuron { bias, weights }
     }
 
     pub fn update(&mut self, neuron_change: &NeuronChange, mini_batch_size: usize) {

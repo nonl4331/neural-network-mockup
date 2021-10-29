@@ -1,5 +1,6 @@
-use crate::network::change::LayerChange;
-use crate::network::{layer::LayerTrait, utility::Float};
+use crate::network::{change::LayerChange, Float};
+
+use super::LayerTrait;
 
 pub struct InputLayer {
     length: usize,
@@ -7,34 +8,40 @@ pub struct InputLayer {
 }
 
 impl LayerTrait for InputLayer {
+    fn backward(
+        &mut self,
+        _: &Vec<Float>,
+        _: &mut LayerChange,
+        error_input: &Vec<Float>,
+        weights: Vec<Vec<Float>>,
+        _: Float,
+    ) -> (Vec<f32>, Vec<Vec<f32>>) {
+        (error_input.clone(), weights)
+    }
+
+    fn empty_layer_change(&self) -> LayerChange {
+        LayerChange::None
+    }
+
     fn forward(&mut self, input: Vec<Float>) {
         assert_eq!(self.length, input.len());
 
         self.output = input;
     }
-    fn backward(
-        &mut self,
-        a: &Vec<Float>,
-        layer_change: &mut LayerChange,
-        error_input: &Vec<Float>,
-        weights: Vec<Vec<Float>>,
-        eta: Float,
-    ) -> (Vec<f32>, Vec<Vec<f32>>) {
-        (error_input.clone(), weights)
+
+    fn last_output(&self) -> Vec<Float> {
+        self.output.clone()
     }
-    fn get_len(&self) -> usize {
+
+    fn last_z_values(&self) -> Vec<Float> {
+        self.output.clone()
+    }
+
+    fn neuron_count(&self) -> usize {
         self.length
     }
-    fn get_output(&self) -> Vec<Float> {
-        self.output.clone()
-    }
-    fn get_z_values(&self) -> Vec<Float> {
-        self.output.clone()
-    }
-    fn get_layer_change(&self) -> LayerChange {
-        LayerChange::None
-    }
-    fn update(&mut self, changes: &LayerChange, mini_batch_size: usize) {}
+
+    fn update(&mut self, _: &LayerChange, _: usize) {}
 }
 
 impl InputLayer {
@@ -44,4 +51,11 @@ impl InputLayer {
             output: Vec::new(),
         }
     }
+}
+
+#[macro_export]
+macro_rules! input {
+    ($length:expr) => {
+        network::layer::Layer::InputLayer(network::layer::inputlayer::InputLayer::new($length))
+    };
 }

@@ -1,24 +1,59 @@
-use crate::network::change::LayerChange;
-use crate::network::change::OutputLayerChange;
-use crate::network::neuron::activation_function::*;
-use crate::network::neuron::cost_function::d_quadratic_cost;
-use crate::network::neuron::Neuron;
-use crate::network::{
-    layer::{InitType, LayerTrait},
-    utility::{
-        get_weights_vec, hadamard_product, he_init, normalised_xavier_init, update_change_neurons,
-        xavier_init, Float,
-    },
-};
+use crate::network::{ActivationFunction, CostFunction, Float, InitType, Neuron};
+
+use crate::network::change::{LayerChange, OutputLayerChange};
+
+use crate::network::utility::{get_weights_vec, hadamard_product};
+
+use super::LayerTrait;
 
 pub struct OutputLayer {
     activation_function: ActivationFunction,
+    cost_function: CostFunction,
     neurons: Vec<Neuron>,
     z_values: Vec<Float>,
     output: Vec<Float>,
 }
 
 impl LayerTrait for OutputLayer {
+    fn backward(
+        &mut self,
+        a: &Vec<Float>,
+        layer_change: &mut LayerChange,
+        output: &Vec<Float>,
+        expected_output: Vec<Vec<Float>>,
+        eta: Float,
+    ) -> (Vec<f32>, Vec<Vec<f32>>) {
+        assert_eq!(expected_output.len(), 1);
+        let expected_output = &expected_output[0];
+
+        let c_da: Vec<Float> = output
+            .iter()
+            .zip(expected_output.iter())
+            .map(|(&output, &expected_output)| {
+                self.cost_function.derivative(output, expected_output)
+            })
+            .collect();
+
+        let a_dz: Vec<Float> = self
+            .z_values
+            .iter()
+            .map(|&z| self.activation_function.derivative(z))
+            .collect();
+
+        let errors = hadamard_product(&c_da, &a_dz);
+
+        layer_change.update(&errors, a, eta);
+
+        (errors, get_weights_vec(&self.neurons))
+    }
+
+    fn empty_layer_change(&self) -> LayerChange {
+        LayerChange::OutputLayerChange(OutputLayerChange::new(
+            self.neurons.len(),
+            self.neurons[0].weights.len(),
+        ))
+    }
+
     fn forward(&mut self, input: Vec<Float>) {
         assert_eq!(self.neurons[0].weights.len(), input.len());
         let mut z_values = Vec::new();
@@ -33,61 +68,27 @@ impl LayerTrait for OutputLayer {
 
             z_values.push(z);
         }
-        let output = match self.activation_function {
-            ActivationFunction::Sigmoid => z_values.iter().map(|&z| sigmoid(z)).collect(),
-            ActivationFunction::Softmax => {
-                let sum: Float = z_values.iter().map(|&z| z.exp()).sum();
+        let output = z_values
+            .iter()
+            .map(|&z| self.activation_function.evaluate(z))
+            .collect();
 
-                z_values.iter().map(|&z| z.exp() / sum).collect()
-            }
-        };
         self.z_values = z_values;
         self.output = output;
     }
-    fn backward(
-        &mut self,
-        a: &Vec<Float>,
-        layer_change: &mut LayerChange,
-        output: &Vec<Float>,
-        expected_output: Vec<Vec<Float>>,
-        eta: Float,
-    ) -> (Vec<f32>, Vec<Vec<f32>>) {
-        assert_eq!(expected_output.len(), 1);
-        let expected_output = &expected_output[0];
-        let c_da: Vec<Float> = output
-            .iter()
-            .zip(expected_output.iter())
-            .map(|(&output, &expected_output)| d_quadratic_cost(output, expected_output))
-            .collect();
 
-        let a_dz: Vec<Float> = match self.activation_function {
-            ActivationFunction::Sigmoid => self.z_values.iter().map(|&z| d_sigmoid(z)).collect(),
-            ActivationFunction::Softmax => {
-                panic!("a_dz not implemented for softmax yet!");
-            }
-        };
-
-        let errors = hadamard_product(&c_da, &a_dz);
-
-        update_change_neurons(layer_change.get_neurons_mut(), &errors, &a, eta);
-
-        (errors, get_weights_vec(&self.neurons))
-    }
-    fn get_len(&self) -> usize {
-        self.neurons.len()
-    }
-    fn get_output(&self) -> Vec<Float> {
+    fn last_output(&self) -> Vec<Float> {
         self.output.clone()
     }
-    fn get_z_values(&self) -> Vec<Float> {
+
+    fn last_z_values(&self) -> Vec<Float> {
         self.z_values.clone()
     }
-    fn get_layer_change(&self) -> LayerChange {
-        LayerChange::OutputLayerChange(OutputLayerChange::new(
-            self.neurons.len(),
-            self.neurons[0].weights.len(),
-        ))
+
+    fn neuron_count(&self) -> usize {
+        self.neurons.len()
     }
+
     fn update(&mut self, changes: &LayerChange, mini_batch_size: usize) {
         for (neuron, neuron_change) in self.neurons.iter_mut().zip(changes.get_neurons()) {
             neuron.update(neuron_change, mini_batch_size);
@@ -97,8 +98,9 @@ impl LayerTrait for OutputLayer {
 
 impl OutputLayer {
     pub fn new(
-        init_type: InitType,
         activation_function: ActivationFunction,
+        cost_function: CostFunction,
+        init_type: InitType,
         input_size: usize,
         length: usize,
     ) -> Self {
@@ -106,25 +108,29 @@ impl OutputLayer {
         for _ in 0..length {
             let mut weights = Vec::new();
             for _ in 0..input_size {
-                match init_type {
-                    InitType::Xavier => {
-                        weights.push(xavier_init(input_size));
-                    }
-                    InitType::NormalisedXavier => {
-                        weights.push(normalised_xavier_init(input_size, length));
-                    }
-                    InitType::He => {
-                        weights.push(he_init(input_size));
-                    }
-                }
+                weights.push(init_type.generate_weight(input_size, length));
             }
             neurons.push(Neuron::new(weights, 0.0));
         }
         OutputLayer {
-            neurons,
             activation_function,
-            z_values: Vec::new(),
+            cost_function,
+            neurons,
             output: Vec::new(),
+            z_values: Vec::new(),
         }
     }
+}
+
+#[macro_export]
+macro_rules! output {
+    ($activation_function:expr, $cost_function:expr, $init_type:expr, $input_size:expr, $length:expr) => {
+        network::layer::Layer::OutputLayer(network::layer::outputlayer::OutputLayer::new(
+            $activation_function,
+            $cost_function,
+            $init_type,
+            $input_size,
+            $length,
+        ))
+    };
 }

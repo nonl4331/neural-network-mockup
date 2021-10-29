@@ -5,10 +5,30 @@ pub enum ActivationFunction {
     Softmax,
 }
 
-pub fn sigmoid(value: Float) -> Float {
-    1.0 / (1.0 + (-value).exp())
+impl ActivationFunction {
+    pub fn derivative(&self, value: Float) -> Float {
+        match self {
+            ActivationFunction::Sigmoid => d_sigmoid(value),
+            ActivationFunction::Softmax => {
+                unimplemented!()
+            }
+        }
+    }
+
+    pub fn evaluate(&self, value: Float) -> Float {
+        match self {
+            ActivationFunction::Sigmoid => sigmoid(value),
+            ActivationFunction::Softmax => {
+                unimplemented!()
+            }
+        }
+    }
 }
 
 pub fn d_sigmoid(value: Float) -> Float {
     sigmoid(value) * (1.0 - sigmoid(value))
+}
+
+pub fn sigmoid(value: Float) -> Float {
+    1.0 / (1.0 + (-value).exp())
 }

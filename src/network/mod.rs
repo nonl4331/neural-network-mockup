@@ -2,14 +2,20 @@ pub mod layer;
 
 pub mod neuron;
 
-mod utility;
-
 mod change;
 
-use crate::network::change::LayerChange;
-use crate::network::layer::LayerTrait;
-use crate::network::utility::Float;
-use layer::Layer;
+mod utility;
+
+pub use neuron::{
+    activation_function::ActivationFunction, cost_function::CostFunction, initialisation::InitType,
+    Neuron,
+};
+
+use {
+    change::LayerChange,
+    layer::{Layer, LayerTrait},
+    utility::{max_index, Float},
+};
 
 use rand::prelude::SliceRandom;
 use rand::thread_rng;
@@ -21,33 +27,12 @@ pub struct Network {
 }
 
 impl Network {
-    pub fn from_layers(layers: Vec<Layer>) -> Self {
-        Network { layers }
-    }
-
-    pub fn get_layer_changes(&self) -> Vec<LayerChange> {
-        let mut changes = Vec::new();
-        for layer in &self.layers {
-            changes.push(layer.get_layer_change());
-        }
-        changes
-    }
-
-    pub fn apply_layer_changes(&mut self, changes: &Vec<LayerChange>, mini_batch_size: usize) {
+    fn apply_layer_changes(&mut self, changes: &Vec<LayerChange>, mini_batch_size: usize) {
         assert_eq!(self.layers.len(), changes.len());
 
         for (layer, layer_change) in self.layers.iter_mut().zip(changes) {
             layer.update(layer_change, mini_batch_size);
         }
-    }
-
-    pub fn forward(&mut self, input: Vec<Float>) -> Vec<Float> {
-        let mut next_input = input;
-        for layer in &mut self.layers {
-            layer.forward(next_input);
-            next_input = layer.get_output();
-        }
-        next_input
     }
 
     fn backpropagation(
@@ -58,15 +43,15 @@ impl Network {
         eta: Float,
     ) -> Vec<Float> {
         let len = self.layers.len();
-        assert_eq!(expected_output.len(), self.layers[len - 1].get_len());
+        assert_eq!(expected_output.len(), self.layers[len - 1].neuron_count());
         let mut z_values = Vec::new();
         let mut outputs = Vec::new();
         let mut output = input.clone();
         for layer in &mut self.layers {
             layer.forward(output);
-            output = layer.get_output();
+            output = layer.last_output();
             outputs.push(output.clone());
-            z_values.push(layer.get_z_values());
+            z_values.push(layer.last_z_values());
         }
 
         let expected_output = vec![expected_output.clone(); 1];
@@ -98,6 +83,28 @@ impl Network {
 
         output
     }
+
+    fn empty_layer_changes(&self) -> Vec<LayerChange> {
+        let mut changes = Vec::new();
+        for layer in &self.layers {
+            changes.push(layer.empty_layer_change());
+        }
+        changes
+    }
+
+    pub fn forward(&mut self, input: Vec<Float>) -> Vec<Float> {
+        let mut next_input = input;
+        for layer in &mut self.layers {
+            layer.forward(next_input);
+            next_input = layer.last_output();
+        }
+        next_input
+    }
+
+    pub fn from_layers(layers: Vec<Layer>) -> Self {
+        Network { layers }
+    }
+
     pub fn sgd(
         &mut self,
         mut training_data: Data,
@@ -113,7 +120,7 @@ impl Network {
             let mini_batches = training_data.chunks(mini_batch_size);
 
             for mini_batch in mini_batches {
-                let mut changes = self.get_layer_changes();
+                let mut changes = self.empty_layer_changes();
 
                 for data in mini_batch {
                     self.backpropagation(&data.0, &mut changes, &data.1, eta);
@@ -156,17 +163,4 @@ impl Network {
             );
         }
     }
-}
-
-/// max() over a slice of floats, gets the index of a largest value
-fn max_index(nets: &[Float]) -> usize {
-    let mut max = Float::NEG_INFINITY;
-    let mut index = 0;
-    for (i, n) in nets.iter().enumerate() {
-        if *n > max {
-            index = i;
-            max = *n;
-        }
-    }
-    index
 }
