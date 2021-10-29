@@ -104,6 +104,7 @@ impl Network {
         mini_batch_size: usize,
         eta: Float,
     ) {
+        let mut max_correct = 0;
         for i in 0..epochs {
             training_data.shuffle(&mut thread_rng());
 
@@ -128,6 +129,9 @@ impl Network {
                         correct += 1;
                     }
                 }
+                if correct > max_correct {
+                    max_correct = correct;
+                }
 
                 println!(
                     "Epoch {}: {} / {} ({}%)",
@@ -139,6 +143,15 @@ impl Network {
             } else {
                 println!("Epoch {} complete.", i);
             }
+        }
+        if test_data.is_some() {
+            let num = test_data.as_ref().unwrap().len();
+            println!(
+                "Highest accuracy: {} / {} ({}%)",
+                max_correct,
+                num,
+                (max_correct * 100) as Float / num as Float
+            );
         }
     }
 }
