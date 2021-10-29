@@ -2,6 +2,7 @@ use crate::network::change::NeuronChange;
 use crate::network::layer::Neuron;
 
 use rand::{thread_rng, Rng};
+use rand_distr::{Distribution, Normal};
 
 pub type Float = f32;
 
@@ -27,6 +28,13 @@ pub fn normalised_xavier_init(in_num: usize, self_num: usize) -> Float {
     let mut rng = thread_rng();
     let val = (6.0 / (in_num + self_num) as Float).sqrt();
     rng.gen_range((-val)..val)
+}
+
+pub fn he_init(in_num: usize) -> Float {
+    let mut rng = thread_rng();
+    let std = (2.0 / in_num as Float).sqrt();
+    let normal = Normal::new(0.0, std).unwrap();
+    normal.sample(&mut rng)
 }
 
 pub fn update_change_neurons(

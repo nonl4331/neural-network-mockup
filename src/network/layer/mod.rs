@@ -18,6 +18,7 @@ pub struct Neuron {
 pub enum InitType {
     NormalisedXavier,
     Xavier,
+    He,
 }
 
 pub enum ActivationFunction {
