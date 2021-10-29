@@ -21,7 +21,6 @@ impl LayerTrait for OutputLayer {
         layer_change: &mut LayerChange,
         output: &Vec<Float>,
         expected_output: Vec<Vec<Float>>,
-        learning_rate: Float,
     ) -> (Vec<f32>, Vec<Vec<f32>>) {
         assert_eq!(expected_output.len(), 1);
         let expected_output = &expected_output[0];

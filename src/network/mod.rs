@@ -52,7 +52,6 @@ impl Network {
         input: &Vec<Float>,
         changes: &mut Vec<LayerChange>,
         expected_output: &Vec<Float>,
-        learning_rate: Float,
     ) -> Vec<Float> {
         let len = self.layers.len();
         assert_eq!(expected_output.len(), self.layers[len - 1].neuron_count());
@@ -73,7 +72,6 @@ impl Network {
             &mut changes[len - 1],
             &output,
             expected_output,
-            learning_rate,
         );
 
         for i in 0..(len - 1) {
@@ -86,7 +84,6 @@ impl Network {
                 &mut changes[layer_index],
                 &errors,
                 weights,
-                learning_rate,
             );
 
             errors = terrors;
@@ -135,7 +132,7 @@ impl Network {
                 let mut changes = self.empty_layer_changes();
 
                 for data in mini_batch {
-                    self.backpropagation(&data.0, &mut changes, &data.1, learning_rate);
+                    self.backpropagation(&data.0, &mut changes, &data.1);
                 }
                 self.apply_layer_changes(&changes, learning_rate, mini_batch_size);
             }

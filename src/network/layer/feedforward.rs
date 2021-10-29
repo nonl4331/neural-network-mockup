@@ -20,7 +20,6 @@ impl LayerTrait for FeedForward {
         layer_change: &mut LayerChange,
         error_input: &Vec<Float>,
         weights: Vec<Vec<Float>>,
-        learning_rate: Float,
     ) -> (Vec<f32>, Vec<Vec<f32>>) {
         let weights = transpose(weights);
 

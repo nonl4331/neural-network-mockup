@@ -19,18 +19,11 @@ impl LayerTrait for Layer {
         layer_change: &mut LayerChange,
         error_input: &Vec<Float>,
         weights: Vec<Vec<Float>>,
-        learning_rate: Float,
     ) -> (Vec<Float>, Vec<Vec<Float>>) {
         match self {
-            Layer::InputLayer(layer) => {
-                (*layer).backward(a, layer_change, error_input, weights, learning_rate)
-            }
-            Layer::FeedForward(layer) => {
-                (*layer).backward(a, layer_change, error_input, weights, learning_rate)
-            }
-            Layer::OutputLayer(layer) => {
-                (*layer).backward(a, layer_change, error_input, weights, learning_rate)
-            }
+            Layer::InputLayer(layer) => (*layer).backward(a, layer_change, error_input, weights),
+            Layer::FeedForward(layer) => (*layer).backward(a, layer_change, error_input, weights),
+            Layer::OutputLayer(layer) => (*layer).backward(a, layer_change, error_input, weights),
         }
     }
 
@@ -102,7 +95,6 @@ pub trait LayerTrait {
         layer_change: &mut LayerChange,
         error_input: &Vec<Float>,
         weights: Vec<Vec<Float>>,
-        learning_rate: Float,
     ) -> (Vec<Float>, Vec<Vec<Float>>);
     fn empty_layer_change(&self) -> LayerChange;
     fn forward(&mut self, input: Vec<Float>);

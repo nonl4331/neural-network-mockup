@@ -14,7 +14,6 @@ impl LayerTrait for InputLayer {
         _: &mut LayerChange,
         error_input: &Vec<Float>,
         weights: Vec<Vec<Float>>,
-        _: Float,
     ) -> (Vec<f32>, Vec<Vec<f32>>) {
         (error_input.clone(), weights)
     }
