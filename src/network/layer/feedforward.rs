@@ -1,10 +1,12 @@
 use crate::network::change::FeedForwardChange;
 use crate::network::change::LayerChange;
-use crate::network::layer::{ActivationFunction, InitType, LayerTrait, Neuron};
+use crate::network::layer::{InitType, LayerTrait};
+use crate::network::neuron::activation_function::*;
+use crate::network::neuron::Neuron;
 
 use crate::network::utility::{
-    d_sigmoid, get_weights_vec, hadamard_product, he_init, normalised_xavier_init, sigmoid,
-    transpose, update_change_neurons, xavier_init, Float,
+    get_weights_vec, hadamard_product, he_init, normalised_xavier_init, transpose,
+    update_change_neurons, xavier_init, Float,
 };
 
 pub struct FeedForward {

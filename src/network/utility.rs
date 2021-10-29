@@ -1,22 +1,10 @@
 use crate::network::change::NeuronChange;
-use crate::network::layer::Neuron;
+use crate::network::neuron::Neuron;
 
 use rand::{thread_rng, Rng};
 use rand_distr::{Distribution, Normal};
 
 pub type Float = f32;
-
-pub fn sigmoid(value: Float) -> Float {
-    1.0 / (1.0 + (-value).exp())
-}
-
-pub fn d_sigmoid(value: Float) -> Float {
-    sigmoid(value) * (1.0 - sigmoid(value))
-}
-
-pub fn d_quadratic_cost(value: Float, expected_value: Float) -> Float {
-    value - expected_value
-}
 
 pub fn xavier_init(in_num: usize) -> Float {
     let mut rng = thread_rng();
@@ -59,16 +47,6 @@ pub fn update_change_bias(bias: &mut Float, error: Float, eta: Float) {
 pub fn update_change_weights(weights: &mut Vec<Float>, error: Float, a: &Vec<Float>, eta: Float) {
     for (i, weight) in weights.iter_mut().enumerate() {
         *weight -= eta * error * a[i];
-    }
-}
-
-pub fn update_bias(bias: &mut Float, change: Float, mini_batch_size: usize) {
-    *bias -= change / mini_batch_size as Float;
-}
-
-pub fn update_weights(weights: &mut Vec<Float>, changes: Vec<Float>, mini_batch_size: usize) {
-    for (weight, change) in weights.iter_mut().zip(changes.iter()) {
-        *weight -= change / mini_batch_size as Float;
     }
 }
 

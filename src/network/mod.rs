@@ -1,5 +1,7 @@
 pub mod layer;
 
+pub mod neuron;
+
 mod utility;
 
 mod change;

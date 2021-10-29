@@ -1,7 +1,8 @@
 use crate::mnist_import::parse_files;
 use crate::network::Network;
 
-use crate::network::layer::{ActivationFunction, InitType};
+use crate::network::layer::InitType;
+use crate::network::neuron::activation_function::ActivationFunction;
 
 mod network;
 

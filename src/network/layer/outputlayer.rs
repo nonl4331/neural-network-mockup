@@ -1,10 +1,13 @@
 use crate::network::change::LayerChange;
 use crate::network::change::OutputLayerChange;
+use crate::network::neuron::activation_function::*;
+use crate::network::neuron::cost_function::d_quadratic_cost;
+use crate::network::neuron::Neuron;
 use crate::network::{
-    layer::{ActivationFunction, InitType, LayerTrait, Neuron},
+    layer::{InitType, LayerTrait},
     utility::{
-        d_quadratic_cost, d_sigmoid, get_weights_vec, hadamard_product, he_init,
-        normalised_xavier_init, sigmoid, update_change_neurons, xavier_init, Float,
+        get_weights_vec, hadamard_product, he_init, normalised_xavier_init, update_change_neurons,
+        xavier_init, Float,
     },
 };
 

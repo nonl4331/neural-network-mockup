@@ -3,27 +3,17 @@ pub mod inputlayer;
 pub mod outputlayer;
 
 use crate::network::change::LayerChange;
-use crate::network::change::NeuronChange;
-use crate::network::utility::{update_bias, update_weights, Float};
+
+use crate::network::Float;
 
 use feedforward::FeedForward;
 use inputlayer::InputLayer;
 use outputlayer::OutputLayer;
 
-pub struct Neuron {
-    pub weights: Vec<Float>,
-    bias: Float,
-}
-
 pub enum InitType {
     NormalisedXavier,
     Xavier,
     He,
-}
-
-pub enum ActivationFunction {
-    Sigmoid,
-    Softmax,
 }
 
 pub enum Layer {
@@ -117,21 +107,6 @@ pub trait LayerTrait {
     fn get_output(&self) -> Vec<Float>;
     fn get_layer_change(&self) -> LayerChange;
     fn update(&mut self, changes: &LayerChange, mini_batch_size: usize);
-}
-
-impl Neuron {
-    pub fn new(weights: Vec<Float>, bias: Float) -> Self {
-        Neuron { weights, bias }
-    }
-
-    pub fn update(&mut self, neuron_change: &NeuronChange, mini_batch_size: usize) {
-        update_bias(&mut self.bias, neuron_change.bias, mini_batch_size);
-        update_weights(
-            &mut self.weights,
-            neuron_change.weights.clone(),
-            mini_batch_size,
-        );
-    }
 }
 
 #[macro_export]
