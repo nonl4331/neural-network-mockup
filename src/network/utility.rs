@@ -17,9 +17,15 @@ pub fn d_quadratic_cost(value: Float, expected_value: Float) -> Float {
     value - expected_value
 }
 
-pub fn xavier_init(in_num: usize, out_num: usize) -> Float {
+pub fn xavier_init(in_num: usize) -> Float {
     let mut rng = thread_rng();
-    let val = (6.0 / (in_num + out_num) as Float).sqrt();
+    let val = (1.0 / in_num as Float).sqrt();
+    rng.gen_range((-val)..val)
+}
+
+pub fn normalised_xavier_init(in_num: usize, self_num: usize) -> Float {
+    let mut rng = thread_rng();
+    let val = (6.0 / (in_num + self_num) as Float).sqrt();
     rng.gen_range((-val)..val)
 }
 

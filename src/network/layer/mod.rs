@@ -16,6 +16,7 @@ pub struct Neuron {
 }
 
 pub enum InitType {
+    NormalisedXavier,
     Xavier,
 }
 
@@ -134,12 +135,11 @@ impl Neuron {
 
 #[macro_export]
 macro_rules! feedforward {
-    ($init_type:expr, $activation_function:expr, $input_size:expr, $next_layer_size:expr, $length:expr) => {
+    ($init_type:expr, $activation_function:expr, $input_size:expr, $length:expr) => {
         network::layer::Layer::FeedForward(network::layer::feedforward::FeedForward::new(
             $init_type,
             $activation_function,
             $input_size,
-            $next_layer_size,
             $length,
         ))
     };

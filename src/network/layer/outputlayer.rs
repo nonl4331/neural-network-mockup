@@ -3,8 +3,8 @@ use crate::network::change::OutputLayerChange;
 use crate::network::{
     layer::{ActivationFunction, InitType, LayerTrait, Neuron},
     utility::{
-        d_quadratic_cost, d_sigmoid, get_weights_vec, hadamard_product, sigmoid,
-        update_change_neurons, xavier_init, Float,
+        d_quadratic_cost, d_sigmoid, get_weights_vec, hadamard_product, normalised_xavier_init,
+        sigmoid, update_change_neurons, xavier_init, Float,
     },
 };
 
@@ -105,7 +105,10 @@ impl OutputLayer {
             for _ in 0..input_size {
                 match init_type {
                     InitType::Xavier => {
-                        weights.push(xavier_init(input_size, 1));
+                        weights.push(xavier_init(input_size));
+                    }
+                    InitType::NormalisedXavier => {
+                        weights.push(normalised_xavier_init(input_size, length));
                     }
                 }
             }

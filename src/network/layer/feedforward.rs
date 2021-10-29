@@ -3,8 +3,8 @@ use crate::network::change::LayerChange;
 use crate::network::layer::{ActivationFunction, InitType, LayerTrait, Neuron};
 
 use crate::network::utility::{
-    d_sigmoid, get_weights_vec, hadamard_product, sigmoid, transpose, update_change_neurons,
-    xavier_init, Float,
+    d_sigmoid, get_weights_vec, hadamard_product, normalised_xavier_init, sigmoid, transpose,
+    update_change_neurons, xavier_init, Float,
 };
 
 pub struct FeedForward {
@@ -89,7 +89,6 @@ impl FeedForward {
         init_type: InitType,
         activation_function: ActivationFunction,
         input_size: usize,
-        next_layer_size: usize,
         length: usize,
     ) -> Self {
         let mut neurons = Vec::new();
@@ -98,7 +97,10 @@ impl FeedForward {
             for _ in 0..input_size {
                 match init_type {
                     InitType::Xavier => {
-                        weights.push(xavier_init(input_size, next_layer_size));
+                        weights.push(xavier_init(input_size));
+                    }
+                    InitType::NormalisedXavier => {
+                        weights.push(normalised_xavier_init(input_size, length));
                     }
                 }
             }

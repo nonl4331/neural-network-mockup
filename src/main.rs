@@ -10,8 +10,18 @@ mod mnist_import;
 fn main() {
     let mut network = Network::from_layers(vec![
         input!(784),
-        feedforward!(InitType::Xavier, ActivationFunction::Sigmoid, 784, 10, 100),
-        output!(InitType::Xavier, ActivationFunction::Sigmoid, 100, 10),
+        feedforward!(
+            InitType::NormalisedXavier,
+            ActivationFunction::Sigmoid,
+            784,
+            100
+        ),
+        output!(
+            InitType::NormalisedXavier,
+            ActivationFunction::Sigmoid,
+            100,
+            10
+        ),
     ]);
     let training_data = parse_files(
         "mnist/train-images-idx3-ubyte",
