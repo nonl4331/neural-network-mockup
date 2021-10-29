@@ -2,7 +2,7 @@ pub mod feedforward;
 pub mod inputlayer;
 pub mod outputlayer;
 
-use crate::network::{change::LayerChange, Float};
+use crate::network::{change::LayerChange, Float, Regularisation};
 
 use {feedforward::FeedForward, inputlayer::InputLayer, outputlayer::OutputLayer};
 
@@ -19,17 +19,17 @@ impl LayerTrait for Layer {
         layer_change: &mut LayerChange,
         error_input: &Vec<Float>,
         weights: Vec<Vec<Float>>,
-        eta: Float,
+        learning_rate: Float,
     ) -> (Vec<Float>, Vec<Vec<Float>>) {
         match self {
             Layer::InputLayer(layer) => {
-                (*layer).backward(a, layer_change, error_input, weights, eta)
+                (*layer).backward(a, layer_change, error_input, weights, learning_rate)
             }
             Layer::FeedForward(layer) => {
-                (*layer).backward(a, layer_change, error_input, weights, eta)
+                (*layer).backward(a, layer_change, error_input, weights, learning_rate)
             }
             Layer::OutputLayer(layer) => {
-                (*layer).backward(a, layer_change, error_input, weights, eta)
+                (*layer).backward(a, layer_change, error_input, weights, learning_rate)
             }
         }
     }
@@ -74,11 +74,23 @@ impl LayerTrait for Layer {
         }
     }
 
-    fn update(&mut self, changes: &LayerChange, mini_batch_size: usize) {
+    fn update(
+        &mut self,
+        changes: &LayerChange,
+        learning_rate: Float,
+        mini_batch_size: usize,
+        regularisation: &Regularisation,
+    ) {
         match self {
-            Layer::FeedForward(layer) => (*layer).update(changes, mini_batch_size),
-            Layer::InputLayer(layer) => (*layer).update(changes, mini_batch_size),
-            Layer::OutputLayer(layer) => (*layer).update(changes, mini_batch_size),
+            Layer::FeedForward(layer) => {
+                (*layer).update(changes, learning_rate, mini_batch_size, regularisation)
+            }
+            Layer::InputLayer(layer) => {
+                (*layer).update(changes, learning_rate, mini_batch_size, regularisation)
+            }
+            Layer::OutputLayer(layer) => {
+                (*layer).update(changes, learning_rate, mini_batch_size, regularisation)
+            }
         }
     }
 }
@@ -97,5 +109,11 @@ pub trait LayerTrait {
     fn last_output(&self) -> Vec<Float>;
     fn last_z_values(&self) -> Vec<Float>;
     fn neuron_count(&self) -> usize;
-    fn update(&mut self, changes: &LayerChange, mini_batch_size: usize);
+    fn update(
+        &mut self,
+        changes: &LayerChange,
+        learning_rate: Float,
+        mini_batch_size: usize,
+        regularisation: &Regularisation,
+    );
 }

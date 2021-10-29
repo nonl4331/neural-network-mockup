@@ -7,7 +7,9 @@ mod change;
 mod utility;
 
 pub use neuron::{
-    activation_function::ActivationFunction, cost_function::CostFunction, initialisation::InitType,
+    activation_function::ActivationFunction,
+    cost_function::{CostFunction, Regularisation},
+    initialisation::InitType,
     Neuron,
 };
 
@@ -27,11 +29,21 @@ pub struct Network {
 }
 
 impl Network {
-    fn apply_layer_changes(&mut self, changes: &Vec<LayerChange>, mini_batch_size: usize) {
+    fn apply_layer_changes(
+        &mut self,
+        changes: &Vec<LayerChange>,
+        learning_rate: Float,
+        mini_batch_size: usize,
+    ) {
         assert_eq!(self.layers.len(), changes.len());
 
         for (layer, layer_change) in self.layers.iter_mut().zip(changes) {
-            layer.update(layer_change, mini_batch_size);
+            layer.update(
+                layer_change,
+                learning_rate,
+                mini_batch_size,
+                &crate::network::Regularisation::None,
+            );
         }
     }
 
@@ -40,7 +52,7 @@ impl Network {
         input: &Vec<Float>,
         changes: &mut Vec<LayerChange>,
         expected_output: &Vec<Float>,
-        eta: Float,
+        learning_rate: Float,
     ) -> Vec<Float> {
         let len = self.layers.len();
         assert_eq!(expected_output.len(), self.layers[len - 1].neuron_count());
@@ -61,7 +73,7 @@ impl Network {
             &mut changes[len - 1],
             &output,
             expected_output,
-            eta,
+            learning_rate,
         );
 
         for i in 0..(len - 1) {
@@ -74,7 +86,7 @@ impl Network {
                 &mut changes[layer_index],
                 &errors,
                 weights,
-                eta,
+                learning_rate,
             );
 
             errors = terrors;
@@ -111,7 +123,7 @@ impl Network {
         test_data: Option<Data>,
         epochs: usize,
         mini_batch_size: usize,
-        eta: Float,
+        learning_rate: Float,
     ) {
         let mut max_correct = 0;
         for i in 0..epochs {
@@ -123,9 +135,9 @@ impl Network {
                 let mut changes = self.empty_layer_changes();
 
                 for data in mini_batch {
-                    self.backpropagation(&data.0, &mut changes, &data.1, eta);
+                    self.backpropagation(&data.0, &mut changes, &data.1, learning_rate);
                 }
-                self.apply_layer_changes(&changes, mini_batch_size);
+                self.apply_layer_changes(&changes, learning_rate, mini_batch_size);
             }
 
             if test_data.is_some() {

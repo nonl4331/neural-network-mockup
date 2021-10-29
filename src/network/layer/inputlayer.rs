@@ -1,4 +1,4 @@
-use crate::network::{change::LayerChange, Float};
+use crate::network::{change::LayerChange, Float, Regularisation};
 
 use super::LayerTrait;
 
@@ -41,7 +41,7 @@ impl LayerTrait for InputLayer {
         self.length
     }
 
-    fn update(&mut self, _: &LayerChange, _: usize) {}
+    fn update(&mut self, _: &LayerChange, _: Float, _: usize, _: &Regularisation) {}
 }
 
 impl InputLayer {

@@ -1,4 +1,4 @@
-use crate::network::{ActivationFunction, CostFunction, Float, InitType, Neuron};
+use crate::network::{ActivationFunction, CostFunction, Float, InitType, Neuron, Regularisation};
 
 use crate::network::change::{LayerChange, OutputLayerChange};
 
@@ -21,7 +21,7 @@ impl LayerTrait for OutputLayer {
         layer_change: &mut LayerChange,
         output: &Vec<Float>,
         expected_output: Vec<Vec<Float>>,
-        eta: Float,
+        learning_rate: Float,
     ) -> (Vec<f32>, Vec<Vec<f32>>) {
         assert_eq!(expected_output.len(), 1);
         let expected_output = &expected_output[0];
@@ -42,7 +42,7 @@ impl LayerTrait for OutputLayer {
 
         let errors = hadamard_product(&c_da, &a_dz);
 
-        layer_change.update(&errors, a, eta);
+        layer_change.update(&errors, a);
 
         (errors, get_weights_vec(&self.neurons))
     }
@@ -89,9 +89,20 @@ impl LayerTrait for OutputLayer {
         self.neurons.len()
     }
 
-    fn update(&mut self, changes: &LayerChange, mini_batch_size: usize) {
+    fn update(
+        &mut self,
+        changes: &LayerChange,
+        learning_rate: Float,
+        mini_batch_size: usize,
+        regularisation: &Regularisation,
+    ) {
         for (neuron, neuron_change) in self.neurons.iter_mut().zip(changes.get_neurons()) {
-            neuron.update(neuron_change, mini_batch_size);
+            neuron.update(
+                learning_rate,
+                neuron_change,
+                mini_batch_size,
+                regularisation,
+            );
         }
     }
 }

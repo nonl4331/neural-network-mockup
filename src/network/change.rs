@@ -15,16 +15,16 @@ impl LayerChange {
         }
     }
 
-    pub fn update(&mut self, errors: &Vec<Float>, a: &Vec<Float>, eta: Float) {
+    pub fn update(&mut self, errors: &Vec<Float>, a: &Vec<Float>) {
         match self {
             LayerChange::FeedForwardChange(layer) => {
                 for (neuron, error) in layer.neurons.iter_mut().zip(errors.iter()) {
-                    neuron.update(a, *error, eta);
+                    neuron.update(a, *error);
                 }
             }
             LayerChange::OutputLayerChange(layer) => {
                 for (neuron, error) in layer.neurons.iter_mut().zip(errors.iter()) {
-                    neuron.update(a, *error, eta);
+                    neuron.update(a, *error);
                 }
             }
             LayerChange::None => unreachable!(),
@@ -56,10 +56,10 @@ pub struct NeuronChange {
 }
 
 impl NeuronChange {
-    pub fn update(&mut self, a: &Vec<Float>, error: Float, eta: Float) {
-        self.bias += eta * error;
+    pub fn update(&mut self, a: &Vec<Float>, error: Float) {
+        self.bias += error;
         for (weight, a_i) in self.weights.iter_mut().zip(a) {
-            *weight += eta * error * a_i;
+            *weight += error * a_i;
         }
     }
 }

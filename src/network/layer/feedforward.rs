@@ -1,4 +1,4 @@
-use crate::network::{ActivationFunction, Float, InitType, Neuron};
+use crate::network::{ActivationFunction, Float, InitType, Neuron, Regularisation};
 
 use crate::network::change::{FeedForwardChange, LayerChange};
 
@@ -20,7 +20,7 @@ impl LayerTrait for FeedForward {
         layer_change: &mut LayerChange,
         error_input: &Vec<Float>,
         weights: Vec<Vec<Float>>,
-        eta: Float,
+        learning_rate: Float,
     ) -> (Vec<f32>, Vec<Vec<f32>>) {
         let weights = transpose(weights);
 
@@ -37,7 +37,7 @@ impl LayerTrait for FeedForward {
 
         let errors = hadamard_product(&c_da, &a_dz);
 
-        layer_change.update(&errors, a, eta);
+        layer_change.update(&errors, a);
 
         (errors, get_weights_vec(&self.neurons))
     }
@@ -85,9 +85,20 @@ impl LayerTrait for FeedForward {
         self.neurons.len()
     }
 
-    fn update(&mut self, changes: &LayerChange, mini_batch_size: usize) {
+    fn update(
+        &mut self,
+        changes: &LayerChange,
+        learning_rate: Float,
+        mini_batch_size: usize,
+        regularisation: &Regularisation,
+    ) {
         for (neuron, neuron_change) in self.neurons.iter_mut().zip(changes.get_neurons()) {
-            neuron.update(neuron_change, mini_batch_size);
+            neuron.update(
+                learning_rate,
+                neuron_change,
+                mini_batch_size,
+                regularisation,
+            );
         }
     }
 }

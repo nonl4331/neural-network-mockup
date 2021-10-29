@@ -13,13 +13,13 @@ fn main() {
             ActivationFunction::Sigmoid,
             InitType::NormalisedXavier,
             784,
-            100
+            30
         ),
         output!(
             ActivationFunction::Sigmoid,
             CostFunction::Quadratic,
             InitType::NormalisedXavier,
-            100,
+            30,
             10
         ),
     ]);
