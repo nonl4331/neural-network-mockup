@@ -122,6 +122,25 @@ impl Network {
         mini_batch_size: usize,
         learning_rate: Float,
     ) {
+        if test_data.is_some() {
+            let mut correct = 0;
+            let num = test_data.as_ref().unwrap().len();
+
+            for data in test_data.as_ref().unwrap() {
+                let output = self.forward(data.0.clone());
+                if max_index(&output) == max_index(&data.1) {
+                    correct += 1;
+                }
+            }
+
+            println!(
+                "Epoch 0: {} / {} ({}%)",
+                correct,
+                num,
+                (correct * 100) as Float / num as Float
+            );
+        }
+
         let mut max_correct = 0;
         for i in 0..epochs {
             training_data.shuffle(&mut thread_rng());
@@ -153,7 +172,7 @@ impl Network {
 
                 println!(
                     "Epoch {}: {} / {} ({}%)",
-                    i,
+                    i + 1,
                     correct,
                     num,
                     (correct * 100) as Float / num as Float
