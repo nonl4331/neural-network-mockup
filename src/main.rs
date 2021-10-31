@@ -17,7 +17,7 @@ fn main() {
         ),
         output!(
             ActivationFunction::Sigmoid,
-            CostFunction::Quadratic,
+            CostFunction::CrossEntropy,
             InitType::NormalisedXavier,
             30,
             10
@@ -36,5 +36,5 @@ fn main() {
     )
     .unwrap();
 
-    network.sgd(training_data, Some(test_data), 30, 10, 3.0);
+    network.sgd(training_data, Some(test_data), 30, 10, 0.25);
 }

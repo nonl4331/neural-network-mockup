@@ -1,8 +1,9 @@
-use crate::network::Float;
+use crate::network::{ActivationFunction, Float};
 
 pub enum CostFunction {
     CrossEntropy,
     Quadratic,
+    LogLikelyhood,
 }
 
 impl CostFunction {
@@ -12,6 +13,34 @@ impl CostFunction {
             CostFunction::CrossEntropy => {
                 unimplemented!()
             }
+            CostFunction::LogLikelyhood => {
+                unimplemented!()
+            }
+        }
+    }
+    pub fn c_dz(
+        &self,
+        activation_function: &ActivationFunction,
+        output: &Float,
+        expected_value: &Float,
+        z: &Float,
+    ) -> Float {
+        match self {
+            CostFunction::Quadratic => {
+                (output - expected_value) * activation_function.derivative(*z)
+            }
+            CostFunction::CrossEntropy => match activation_function {
+                ActivationFunction::Sigmoid => output - expected_value,
+                ActivationFunction::Softmax => {
+                    unimplemented!()
+                }
+            },
+            CostFunction::LogLikelyhood => match activation_function {
+                ActivationFunction::Sigmoid => {
+                    unimplemented!()
+                }
+                ActivationFunction::Softmax => output - expected_value,
+            },
         }
     }
 }

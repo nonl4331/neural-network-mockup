@@ -25,21 +25,15 @@ impl LayerTrait for OutputLayer {
         assert_eq!(expected_output.len(), 1);
         let expected_output = &expected_output[0];
 
-        let c_da: Vec<Float> = output
+        let errors = output
             .iter()
             .zip(expected_output.iter())
-            .map(|(&output, &expected_output)| {
-                self.cost_function.derivative(output, expected_output)
+            .zip(self.z_values.iter())
+            .map(|((output, expected_output), z)| {
+                self.cost_function
+                    .c_dz(&self.activation_function, output, expected_output, z)
             })
             .collect();
-
-        let a_dz: Vec<Float> = self
-            .z_values
-            .iter()
-            .map(|&z| self.activation_function.derivative(z))
-            .collect();
-
-        let errors = hadamard_product(&c_da, &a_dz);
 
         layer_change.update(&errors, a);
 
