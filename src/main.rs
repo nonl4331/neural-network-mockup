@@ -1,3 +1,5 @@
+mod front_end;
+
 mod network;
 
 mod mnist_import;

@@ -6,6 +6,8 @@ mod change;
 
 mod utility;
 
+use crate::front_end::graph_results;
+
 pub use neuron::{
     activation_function::ActivationFunction,
     cost_function::{CostFunction, Regularisation},
@@ -122,6 +124,7 @@ impl Network {
         mini_batch_size: usize,
         learning_rate: Float,
     ) {
+        let mut results: Vec<(f32, f64)> = Vec::new();
         if test_data.is_some() {
             let mut correct = 0;
             let num = test_data.as_ref().unwrap().len();
@@ -133,15 +136,12 @@ impl Network {
                 }
             }
 
-            println!(
-                "Epoch 0: {} / {} ({}%)",
-                correct,
-                num,
-                (correct * 100) as Float / num as Float
-            );
+            let percent_correct = (correct * 100) as Float / num as Float;
+            println!("Epoch 0: {} / {} ({}%)", correct, num, percent_correct);
         }
 
         let mut max_correct = 0;
+        let mut min_correct = test_data.as_ref().unwrap().len();
         for i in 0..epochs {
             training_data.shuffle(&mut thread_rng());
 
@@ -170,15 +170,21 @@ impl Network {
                     max_correct = correct;
                 }
 
+                if correct < min_correct {
+                    min_correct = correct;
+                }
+
+                let percent_correct = (correct * 100) as Float / num as Float;
                 println!(
                     "Epoch {}: {} / {} ({}%)",
                     i + 1,
                     correct,
                     num,
-                    (correct * 100) as Float / num as Float
+                    percent_correct
                 );
+                results.push(((i + 1) as Float, percent_correct as f64));
             } else {
-                println!("Epoch {} complete.", i);
+                println!("Epoch {} complete.", i + 1);
             }
         }
         if test_data.is_some() {
@@ -188,6 +194,12 @@ impl Network {
                 max_correct,
                 num,
                 (max_correct * 100) as Float / num as Float
+            );
+            graph_results(
+                epochs,
+                results,
+                (min_correct * 100) as f64 / num as f64,
+                (max_correct * 100) as f64 / num as f64,
             );
         }
     }
