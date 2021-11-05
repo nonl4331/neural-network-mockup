@@ -1,4 +1,4 @@
-use crate::network::Neuron;
+use crate::network::neuron::Neuron;
 
 pub type Float = f32;
 

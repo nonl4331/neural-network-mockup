@@ -19,20 +19,20 @@ impl InitType {
     }
 }
 
-pub fn he_init(in_num: usize) -> Float {
+fn he_init(in_num: usize) -> Float {
     let mut rng = thread_rng();
     let std = (2.0 / in_num as Float).sqrt();
     let normal = Normal::new(0.0, std).unwrap();
     normal.sample(&mut rng)
 }
 
-pub fn normalised_xavier_init(in_num: usize, self_num: usize) -> Float {
+fn normalised_xavier_init(in_num: usize, self_num: usize) -> Float {
     let mut rng = thread_rng();
     let val = (6.0 / (in_num + self_num) as Float).sqrt();
     rng.gen_range((-val)..val)
 }
 
-pub fn xavier_init(in_num: usize) -> Float {
+fn xavier_init(in_num: usize) -> Float {
     let mut rng = thread_rng();
     let val = (1.0 / in_num as Float).sqrt();
     rng.gen_range((-val)..val)
