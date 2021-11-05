@@ -5,7 +5,7 @@ mod mnist_import;
 
 use mnist_import::parse_files;
 
-use neural_network::{Network, neuron::{ActivationFunction, CostFunction, InitType}};
+use neural_network::{Network, ActivationFunction, CostFunction, InitType};
 
 fn main() {
     let mut network = Network::from_layers(vec![
