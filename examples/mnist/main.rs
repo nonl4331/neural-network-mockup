@@ -1,12 +1,11 @@
-mod front_end;
-
-mod network;
+#[macro_use]
+extern crate neural_network;
 
 mod mnist_import;
 
-use crate::mnist_import::parse_files;
+use mnist_import::parse_files;
 
-use crate::network::{ActivationFunction, CostFunction, InitType, Network};
+use neural_network::{ActivationFunction, CostFunction, InitType, Network};
 
 fn main() {
     let mut network = Network::from_layers(vec![

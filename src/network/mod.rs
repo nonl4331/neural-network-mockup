@@ -1,9 +1,6 @@
-pub mod layer;
-
-pub mod neuron;
-
 mod change;
-
+pub mod layer;
+pub mod neuron;
 mod utility;
 
 use crate::front_end::graph_results;

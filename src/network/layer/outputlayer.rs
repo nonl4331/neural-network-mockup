@@ -2,7 +2,7 @@ use crate::network::{ActivationFunction, CostFunction, Float, InitType, Neuron, 
 
 use crate::network::change::{LayerChange, OutputLayerChange};
 
-use crate::network::utility::{get_weights_vec, hadamard_product};
+use crate::network::utility::get_weights_vec;
 
 use super::LayerTrait;
 
@@ -129,12 +129,14 @@ impl OutputLayer {
 #[macro_export]
 macro_rules! output {
     ($activation_function:expr, $cost_function:expr, $init_type:expr, $input_size:expr, $length:expr) => {
-        network::layer::Layer::OutputLayer(network::layer::outputlayer::OutputLayer::new(
-            $activation_function,
-            $cost_function,
-            $init_type,
-            $input_size,
-            $length,
-        ))
+        neural_network::layer::Layer::OutputLayer(
+            neural_network::layer::outputlayer::OutputLayer::new(
+                $activation_function,
+                $cost_function,
+                $init_type,
+                $input_size,
+                $length,
+            ),
+        )
     };
 }

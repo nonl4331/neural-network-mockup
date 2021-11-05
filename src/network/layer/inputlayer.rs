@@ -55,6 +55,8 @@ impl InputLayer {
 #[macro_export]
 macro_rules! input {
     ($length:expr) => {
-        network::layer::Layer::InputLayer(network::layer::inputlayer::InputLayer::new($length))
+        neural_network::layer::Layer::InputLayer(
+            neural_network::layer::inputlayer::InputLayer::new($length),
+        )
     };
 }
