@@ -1,12 +1,11 @@
-mod front_end;
-
-mod network;
+#[macro_use]
+extern crate neural_network;
 
 mod mnist_import;
 
-use crate::mnist_import::parse_files;
+use mnist_import::parse_files;
 
-use crate::network::{ActivationFunction, CostFunction, InitType, Network};
+use neural_network::{Network, ActivationFunction, CostFunction, InitType};
 
 fn main() {
     let mut network = Network::from_layers(vec![
@@ -38,5 +37,5 @@ fn main() {
     )
     .unwrap();
 
-    network.sgd(training_data, Some(test_data), 30, 10, 0.25);
+    network.sgd(training_data, Some(test_data), 30, 10, 0.25, Some("mnist results"));
 }

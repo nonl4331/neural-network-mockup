@@ -18,6 +18,7 @@ impl CostFunction {
             }
         }
     }
+
     pub fn c_dz(
         &self,
         activation_function: &ActivationFunction,
@@ -51,6 +52,6 @@ pub enum Regularisation {
     None,
 }
 
-pub fn d_quadratic_cost(value: Float, expected_value: Float) -> Float {
+fn d_quadratic_cost(value: Float, expected_value: Float) -> Float {
     value - expected_value
 }

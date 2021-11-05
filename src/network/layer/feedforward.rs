@@ -129,11 +129,13 @@ impl FeedForward {
 #[macro_export]
 macro_rules! feedforward {
     ($activation_function:expr, $init_type:expr, $input_size:expr, $length:expr) => {
-        network::layer::Layer::FeedForward(network::layer::feedforward::FeedForward::new(
-            $activation_function,
-            $init_type,
-            $input_size,
-            $length,
-        ))
+        neural_network::layer::Layer::FeedForward(
+            neural_network::layer::feedforward::FeedForward::new(
+                $activation_function,
+                $init_type,
+                $input_size,
+                $length,
+            ),
+        )
     };
 }

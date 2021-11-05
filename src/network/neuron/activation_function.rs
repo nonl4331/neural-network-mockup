@@ -25,10 +25,10 @@ impl ActivationFunction {
     }
 }
 
-pub fn d_sigmoid(value: Float) -> Float {
+fn d_sigmoid(value: Float) -> Float {
     sigmoid(value) * (1.0 - sigmoid(value))
 }
 
-pub fn sigmoid(value: Float) -> Float {
+fn sigmoid(value: Float) -> Float {
     1.0 / (1.0 + (-value).exp())
 }

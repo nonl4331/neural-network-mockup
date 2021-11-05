@@ -1,9 +1,8 @@
 use plotters::prelude::*;
 
-const FILE_NAME: &'static str = "results.svg";
-
-pub fn graph_results(epochs: usize, data: Vec<(f32, f64)>, min: f64, max: f64) {
-    let root = SVGBackend::new(FILE_NAME, (2000, 1000)).into_drawing_area();
+pub fn graph_results(name: &str, epochs: usize, data: Vec<(f32, f64)>, min: f64, max: f64) {
+    let file = format!("{}.svg", name);
+    let root = SVGBackend::new(&file, (2000, 1000)).into_drawing_area();
 
     root.fill(&WHITE).unwrap();
 
@@ -13,7 +12,7 @@ pub fn graph_results(epochs: usize, data: Vec<(f32, f64)>, min: f64, max: f64) {
     let y_range = (min - 0.1 * y_range)..(max + 0.1 * y_range);
 
     let mut chart = ChartBuilder::on(&root)
-        .caption("MNIST test data", ("sans-serif", 20).into_font())
+        .caption(name, ("sans-serif", 20).into_font())
         .x_label_area_size(20)
         .y_label_area_size(40)
         .build_cartesian_2d(0.0..epochs as f32, y_range)

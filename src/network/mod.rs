@@ -1,9 +1,6 @@
-pub mod layer;
-
-pub mod neuron;
-
 mod change;
-
+pub mod layer;
+mod neuron;
 mod utility;
 
 use crate::front_end::graph_results;
@@ -15,16 +12,17 @@ pub use neuron::{
     Neuron,
 };
 
+pub use utility::Float;
 use {
     change::LayerChange,
     layer::{Layer, LayerTrait},
-    utility::{max_index, Float},
+    utility::max_index,
 };
 
 use rand::prelude::SliceRandom;
 use rand::thread_rng;
 
-type Data = Vec<(Vec<Float>, Vec<Float>)>;
+pub type NetworkData = Vec<(Vec<Float>, Vec<Float>)>;
 
 pub struct Network {
     layers: Vec<Layer>,
@@ -118,11 +116,12 @@ impl Network {
 
     pub fn sgd(
         &mut self,
-        mut training_data: Data,
-        test_data: Option<Data>,
+        mut training_data: NetworkData,
+        test_data: Option<NetworkData>,
         epochs: usize,
         mini_batch_size: usize,
         learning_rate: Float,
+        graph_output: Option<&str>,
     ) {
         let mut results: Vec<(f32, f64)> = Vec::new();
         if test_data.is_some() {
@@ -195,12 +194,18 @@ impl Network {
                 num,
                 (max_correct * 100) as Float / num as Float
             );
-            graph_results(
-                epochs,
-                results,
-                (min_correct * 100) as f64 / num as f64,
-                (max_correct * 100) as f64 / num as f64,
-            );
+            match graph_output {
+                Some(name) => {
+                    graph_results(
+                        name,
+                        epochs,
+                        results,
+                        (min_correct * 100) as f64 / num as f64,
+                        (max_correct * 100) as f64 / num as f64,
+                    );
+                }
+                _ => {}
+            }
         }
     }
 }
