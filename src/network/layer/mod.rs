@@ -15,9 +15,9 @@ pub enum Layer {
 impl LayerTrait for Layer {
     fn backward(
         &mut self,
-        a: &Vec<Float>,
+        a: &[Float],
         layer_change: &mut LayerChange,
-        error_input: &Vec<Float>,
+        error_input: &[Float],
         weights: Vec<Vec<Float>>,
     ) -> (Vec<Float>, Vec<Vec<Float>>) {
         match self {
@@ -91,9 +91,9 @@ impl LayerTrait for Layer {
 pub trait LayerTrait {
     fn backward(
         &mut self,
-        a: &Vec<Float>,
+        a: &[Float],
         layer_change: &mut LayerChange,
-        error_input: &Vec<Float>,
+        error_input: &[Float],
         weights: Vec<Vec<Float>>,
     ) -> (Vec<Float>, Vec<Vec<Float>>);
     fn empty_layer_change(&self) -> LayerChange;

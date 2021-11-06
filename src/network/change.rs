@@ -15,7 +15,7 @@ impl LayerChange {
         }
     }
 
-    pub fn update(&mut self, errors: &Vec<Float>, a: &Vec<Float>) {
+    pub fn update(&mut self, errors: &[Float], a: &[Float]) {
         match self {
             LayerChange::FeedForwardChange(layer) => {
                 for (neuron, error) in layer.neurons.iter_mut().zip(errors.iter()) {
@@ -56,7 +56,7 @@ pub struct NeuronChange {
 }
 
 impl NeuronChange {
-    pub fn update(&mut self, a: &Vec<Float>, error: Float) {
+    pub fn update(&mut self, a: &[Float], error: Float) {
         self.bias += error;
         for (weight, a_i) in self.weights.iter_mut().zip(a) {
             *weight += error * a_i;

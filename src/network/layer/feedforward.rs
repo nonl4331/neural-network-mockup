@@ -16,16 +16,16 @@ pub struct FeedForward {
 impl LayerTrait for FeedForward {
     fn backward(
         &mut self,
-        a: &Vec<Float>,
+        a: &[Float],
         layer_change: &mut LayerChange,
-        error_input: &Vec<Float>,
+        error_input: &[Float],
         weights: Vec<Vec<Float>>,
     ) -> (Vec<f32>, Vec<Vec<f32>>) {
         let weights = transpose(weights);
 
         let c_da: Vec<Float> = weights
             .iter()
-            .map(|weights| hadamard_product(weights, &error_input).iter().sum())
+            .map(|weights| hadamard_product(weights, error_input).iter().sum())
             .collect();
 
         let a_dz: Vec<Float> = self

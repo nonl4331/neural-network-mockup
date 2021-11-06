@@ -17,15 +17,15 @@ pub struct OutputLayer {
 impl LayerTrait for OutputLayer {
     fn backward(
         &mut self,
-        a: &Vec<Float>,
+        a: &[Float],
         layer_change: &mut LayerChange,
-        output: &Vec<Float>,
+        output: &[Float],
         expected_output: Vec<Vec<Float>>,
     ) -> (Vec<f32>, Vec<Vec<f32>>) {
         assert_eq!(expected_output.len(), 1);
         let expected_output = &expected_output[0];
 
-        let errors = output
+        let errors: Vec<Float> = output
             .iter()
             .zip(expected_output.iter())
             .zip(self.z_values.iter())

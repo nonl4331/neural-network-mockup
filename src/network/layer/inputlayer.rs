@@ -10,12 +10,12 @@ pub struct InputLayer {
 impl LayerTrait for InputLayer {
     fn backward(
         &mut self,
-        _: &Vec<Float>,
+        _: &[Float],
         _: &mut LayerChange,
-        error_input: &Vec<Float>,
+        error_input: &[Float],
         weights: Vec<Vec<Float>>,
     ) -> (Vec<f32>, Vec<Vec<f32>>) {
-        (error_input.clone(), weights)
+        (error_input.to_vec(), weights)
     }
 
     fn empty_layer_change(&self) -> LayerChange {

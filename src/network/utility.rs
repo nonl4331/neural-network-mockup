@@ -10,7 +10,7 @@ pub fn get_weights_vec(neurons: &Vec<Neuron>) -> Vec<Vec<Float>> {
     weights
 }
 
-pub fn hadamard_product(a: &Vec<Float>, b: &Vec<Float>) -> Vec<Float> {
+pub fn hadamard_product(a: &[Float], b: &[Float]) -> Vec<Float> {
     a.iter().zip(b).map(|(&a, b)| a * b).collect()
 }
 
