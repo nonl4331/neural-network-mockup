@@ -2,7 +2,7 @@ pub mod feedforward;
 pub mod inputlayer;
 pub mod outputlayer;
 
-use crate::network::{change::LayerChange, Float, Regularisation};
+use crate::network::{Float, Regularisation};
 
 use {feedforward::FeedForward, inputlayer::InputLayer, outputlayer::OutputLayer};
 
@@ -16,22 +16,13 @@ impl LayerTrait for Layer {
     fn backward(
         &mut self,
         a: &[Float],
-        layer_change: &mut LayerChange,
         error_input: &[Float],
-        weights: Vec<Vec<Float>>,
-    ) -> (Vec<Float>, Vec<Vec<Float>>) {
+        weights: (Vec<Float>, [usize; 2]),
+    ) -> (Vec<Float>, Vec<Float>, [usize; 2]) {
         match self {
-            Layer::InputLayer(layer) => (*layer).backward(a, layer_change, error_input, weights),
-            Layer::FeedForward(layer) => (*layer).backward(a, layer_change, error_input, weights),
-            Layer::OutputLayer(layer) => (*layer).backward(a, layer_change, error_input, weights),
-        }
-    }
-
-    fn empty_layer_change(&self) -> LayerChange {
-        match self {
-            Layer::FeedForward(layer) => (*layer).empty_layer_change(),
-            Layer::InputLayer(layer) => (*layer).empty_layer_change(),
-            Layer::OutputLayer(layer) => (*layer).empty_layer_change(),
+            Layer::InputLayer(layer) => (*layer).backward(a, error_input, weights),
+            Layer::FeedForward(layer) => (*layer).backward(a, error_input, weights),
+            Layer::OutputLayer(layer) => (*layer).backward(a, error_input, weights),
         }
     }
 
@@ -59,31 +50,30 @@ impl LayerTrait for Layer {
         }
     }
 
-    fn neuron_count(&self) -> usize {
-        match self {
-            Layer::FeedForward(layer) => (*layer).neuron_count(),
-            Layer::InputLayer(layer) => (*layer).neuron_count(),
-            Layer::OutputLayer(layer) => (*layer).neuron_count(),
-        }
-    }
-
     fn update(
         &mut self,
-        changes: &LayerChange,
         learning_rate: Float,
         mini_batch_size: usize,
         regularisation: &Regularisation,
     ) {
         match self {
             Layer::FeedForward(layer) => {
-                (*layer).update(changes, learning_rate, mini_batch_size, regularisation)
+                (*layer).update(learning_rate, mini_batch_size, regularisation)
             }
             Layer::InputLayer(layer) => {
-                (*layer).update(changes, learning_rate, mini_batch_size, regularisation)
+                (*layer).update(learning_rate, mini_batch_size, regularisation)
             }
             Layer::OutputLayer(layer) => {
-                (*layer).update(changes, learning_rate, mini_batch_size, regularisation)
+                (*layer).update(learning_rate, mini_batch_size, regularisation)
             }
+        }
+    }
+
+    fn update_change(&mut self, errors: &[Float], a: &[Float]) {
+        match self {
+            Layer::FeedForward(layer) => (*layer).update_change(errors, a),
+            Layer::InputLayer(layer) => (*layer).update_change(errors, a),
+            Layer::OutputLayer(layer) => (*layer).update_change(errors, a),
         }
     }
 }
@@ -92,20 +82,18 @@ pub trait LayerTrait {
     fn backward(
         &mut self,
         a: &[Float],
-        layer_change: &mut LayerChange,
         error_input: &[Float],
-        weights: Vec<Vec<Float>>,
-    ) -> (Vec<Float>, Vec<Vec<Float>>);
-    fn empty_layer_change(&self) -> LayerChange;
+        weights: (Vec<Float>, [usize; 2]),
+        // errors, weights, dimensions_weights
+    ) -> (Vec<Float>, Vec<Float>, [usize; 2]);
     fn forward(&mut self, input: Vec<Float>);
     fn last_output(&self) -> Vec<Float>;
     fn last_z_values(&self) -> Vec<Float>;
-    fn neuron_count(&self) -> usize;
     fn update(
         &mut self,
-        changes: &LayerChange,
         learning_rate: Float,
         mini_batch_size: usize,
         regularisation: &Regularisation,
     );
+    fn update_change(&mut self, errors: &[Float], a: &[Float]);
 }

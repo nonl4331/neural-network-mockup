@@ -1,29 +1,34 @@
-use crate::network::{ActivationFunction, CostFunction, Float, InitType, Neuron, Regularisation};
+use blas::sgemm;
 
-use crate::network::change::{LayerChange, OutputLayerChange};
+use crate::network::{ActivationFunction, CostFunction, Float, InitType, Regularisation};
 
-use crate::network::utility::get_weights_vec;
+use crate::network::change::OutputLayerChange;
+
+use crate::network::utility::{outer_product_add, plus_equals_matrix_multiplied};
+
+extern crate openblas_src;
 
 use super::LayerTrait;
 
 pub struct OutputLayer {
     activation_function: ActivationFunction,
+    biases: Vec<Float>,
+    change: Option<OutputLayerChange>,
     cost_function: CostFunction,
-    neurons: Vec<Neuron>,
-    z_values: Vec<Float>,
     output: Vec<Float>,
+    weights: Vec<Float>,
+    weight_dimensions: [usize; 2],
+    z_values: Vec<Float>,
 }
 
 impl LayerTrait for OutputLayer {
     fn backward(
         &mut self,
         a: &[Float],
-        layer_change: &mut LayerChange,
         output: &[Float],
-        expected_output: Vec<Vec<Float>>,
-    ) -> (Vec<f32>, Vec<Vec<f32>>) {
-        assert_eq!(expected_output.len(), 1);
-        let expected_output = &expected_output[0];
+        expected_output: (Vec<Float>, [usize; 2]),
+    ) -> (Vec<Float>, Vec<Float>, [usize; 2]) {
+        let expected_output = &expected_output.0;
 
         let errors: Vec<Float> = output
             .iter()
@@ -35,38 +40,40 @@ impl LayerTrait for OutputLayer {
             })
             .collect();
 
-        layer_change.update(&errors, a);
+        self.update_change(&errors, a);
 
-        (errors, get_weights_vec(&self.neurons))
-    }
-
-    fn empty_layer_change(&self) -> LayerChange {
-        LayerChange::OutputLayerChange(OutputLayerChange::new(
-            self.neurons.len(),
-            self.neurons[0].weights.len(),
-        ))
+        (errors, self.weights.clone(), self.weight_dimensions)
     }
 
     fn forward(&mut self, input: Vec<Float>) {
-        assert_eq!(self.neurons[0].weights.len(), input.len());
-        let mut z_values = Vec::new();
-
-        for neuron in &self.neurons {
-            let z = neuron
-                .weights
-                .iter()
-                .zip(input.iter())
-                .fold(0.0, |acc, (input, weight)| acc + input * weight)
-                + neuron.bias;
-
-            z_values.push(z);
+        assert_eq!(self.weight_dimensions[1], input.len());
+        self.z_values = self.biases.clone();
+        unsafe {
+            sgemm(
+                b'N',
+                b'N',
+                self.weight_dimensions[0] as i32,
+                1,
+                self.weight_dimensions[1] as i32,
+                1.0,
+                &self.weights,
+                self.weight_dimensions[0] as i32,
+                &input,
+                self.weight_dimensions[1] as i32,
+                1.0,
+                &mut self.z_values,
+                self.weight_dimensions[1] as i32,
+            );
         }
-        let output = z_values
+
+        // is this optimal??
+        // perhaps have activation_function(z_values: &[]) -> Vec<>
+        let output = self
+            .z_values
             .iter()
             .map(|&z| self.activation_function.evaluate(z))
             .collect();
 
-        self.z_values = z_values;
         self.output = output;
     }
 
@@ -78,25 +85,50 @@ impl LayerTrait for OutputLayer {
         self.z_values.clone()
     }
 
-    fn neuron_count(&self) -> usize {
-        self.neurons.len()
-    }
-
     fn update(
         &mut self,
-        changes: &LayerChange,
         learning_rate: Float,
         mini_batch_size: usize,
         regularisation: &Regularisation,
     ) {
-        for (neuron, neuron_change) in self.neurons.iter_mut().zip(changes.get_neurons()) {
-            neuron.update(
-                learning_rate,
-                neuron_change,
-                mini_batch_size,
-                regularisation,
-            );
+        match &self.change {
+            Some(change) => match regularisation {
+                Regularisation::L1(_lambda) => {
+                    todo!()
+                    //let multiplier = -1.0 / mini_batch_size as Float;
+                    //self.weights *= 1.0 + learning_rate * lambda * multiplier;
+                    //self.weights += multiplier * change;
+                }
+                Regularisation::L2(_lambda) => {
+                    todo!()
+                    //let multiplier = -learning_rate / mini_batch_size as Float;
+                    //self.weights += multiplier * (change + lambda * weight.signum());
+                }
+                Regularisation::None => {
+                    let multiplier = -learning_rate / mini_batch_size as Float;
+
+                    //self.weights += multiplier * self.change.unwrap().weights;
+                    plus_equals_matrix_multiplied(&mut self.weights, multiplier, &change.weights);
+
+                    //self.bias += multiplier * self.change.unwrap().bias;
+                    plus_equals_matrix_multiplied(&mut self.biases, multiplier, &change.biases);
+                }
+            },
+            None => {}
         }
+        self.change = Some(OutputLayer::empty_layer_change(&self.weight_dimensions));
+    }
+
+    fn update_change(&mut self, errors: &[Float], a: &[Float]) {
+        let change = self.change.as_mut().unwrap();
+        let biases = &mut change.biases;
+        let weights = &mut change.weights;
+
+        for (bias, error) in biases.iter_mut().zip(errors) {
+            *bias += error;
+        }
+
+        outer_product_add(&errors, &a, weights);
     }
 }
 
@@ -108,21 +140,27 @@ impl OutputLayer {
         input_size: usize,
         length: usize,
     ) -> Self {
-        let mut neurons = Vec::new();
-        for _ in 0..length {
-            let mut weights = Vec::new();
-            for _ in 0..input_size {
-                weights.push(init_type.generate_weight(input_size, length));
-            }
-            neurons.push(Neuron::new(weights, 0.0));
+        let biases = vec![0.0; length];
+        let mut weights = Vec::new();
+        for _ in 0..length * input_size {
+            weights.push(init_type.generate_weight(input_size, length));
         }
+
+        let weight_dimensions = [length, input_size];
+
         OutputLayer {
             activation_function,
+            biases,
+            change: Some(OutputLayer::empty_layer_change(&weight_dimensions)),
             cost_function,
-            neurons,
             output: Vec::new(),
+            weights,
+            weight_dimensions,
             z_values: Vec::new(),
         }
+    }
+    fn empty_layer_change(weight_dim: &[usize; 2]) -> OutputLayerChange {
+        OutputLayerChange::new(weight_dim)
     }
 }
 

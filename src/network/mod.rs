@@ -9,12 +9,10 @@ pub use neuron::{
     activation_function::ActivationFunction,
     cost_function::{CostFunction, Regularisation},
     initialisation::InitType,
-    Neuron,
 };
 
 pub use utility::Float;
 use {
-    change::LayerChange,
     layer::{Layer, LayerTrait},
     utility::max_index,
 };
@@ -29,17 +27,9 @@ pub struct Network {
 }
 
 impl Network {
-    fn apply_layer_changes(
-        &mut self,
-        changes: &Vec<LayerChange>,
-        learning_rate: Float,
-        mini_batch_size: usize,
-    ) {
-        assert_eq!(self.layers.len(), changes.len());
-
-        for (layer, layer_change) in self.layers.iter_mut().zip(changes) {
+    fn apply_layer_changes(&mut self, learning_rate: Float, mini_batch_size: usize) {
+        for layer in self.layers.iter_mut() {
             layer.update(
-                layer_change,
                 learning_rate,
                 mini_batch_size,
                 &crate::network::Regularisation::None,
@@ -47,14 +37,8 @@ impl Network {
         }
     }
 
-    fn backpropagation(
-        &mut self,
-        input: &Vec<Float>,
-        changes: &mut Vec<LayerChange>,
-        expected_output: &Vec<Float>,
-    ) -> Vec<Float> {
+    fn backpropagation(&mut self, input: &Vec<Float>, expected_output: &Vec<Float>) -> Vec<Float> {
         let len = self.layers.len();
-        assert_eq!(expected_output.len(), self.layers[len - 1].neuron_count());
         let mut z_values = Vec::new();
         let mut outputs = Vec::new();
         let mut output = input.clone();
@@ -65,13 +49,12 @@ impl Network {
             z_values.push(layer.last_z_values());
         }
 
-        let expected_output = vec![expected_output.clone(); 1];
+        let o_len = expected_output.len();
 
-        let (mut errors, mut weights) = self.layers[len - 1].backward(
+        let (mut errors, mut weights, mut dim) = self.layers[len - 1].backward(
             &outputs[outputs.len() - 2],
-            &mut changes[len - 1],
             &output,
-            expected_output,
+            (expected_output.clone(), [o_len, 1]),
         );
 
         for i in 0..(len - 1) {
@@ -79,26 +62,15 @@ impl Network {
 
             let outputs_index = if i == len - 2 { 0 } else { len - (i + 3) };
 
-            let (terrors, tweights) = self.layers[layer_index].backward(
-                &outputs[outputs_index],
-                &mut changes[layer_index],
-                &errors,
-                weights,
-            );
+            let (terrors, tweights, tweights_dim) =
+                self.layers[layer_index].backward(&outputs[outputs_index], &errors, (weights, dim));
 
             errors = terrors;
             weights = tweights;
+            dim = tweights_dim;
         }
 
         output
-    }
-
-    fn empty_layer_changes(&self) -> Vec<LayerChange> {
-        let mut changes = Vec::new();
-        for layer in &self.layers {
-            changes.push(layer.empty_layer_change());
-        }
-        changes
     }
 
     pub fn forward(&mut self, input: Vec<Float>) -> Vec<Float> {
@@ -147,12 +119,10 @@ impl Network {
             let mini_batches = training_data.chunks(mini_batch_size);
 
             for mini_batch in mini_batches {
-                let mut changes = self.empty_layer_changes();
-
                 for data in mini_batch {
-                    self.backpropagation(&data.0, &mut changes, &data.1);
+                    self.backpropagation(&data.0, &data.1);
                 }
-                self.apply_layer_changes(&changes, learning_rate, mini_batch_size);
+                self.apply_layer_changes(learning_rate, mini_batch_size);
             }
 
             if test_data.is_some() {

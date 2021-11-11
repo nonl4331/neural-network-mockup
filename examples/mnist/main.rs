@@ -5,7 +5,7 @@ mod mnist_import;
 
 use mnist_import::parse_files;
 
-use neural_network::{Network, ActivationFunction, CostFunction, InitType};
+use neural_network::{ActivationFunction, CostFunction, InitType, Network};
 
 fn main() {
     let mut network = Network::from_layers(vec![
@@ -18,7 +18,7 @@ fn main() {
         ),
         output!(
             ActivationFunction::Sigmoid,
-            CostFunction::CrossEntropy,
+            CostFunction::Quadratic,
             InitType::NormalisedXavier,
             30,
             10
@@ -37,5 +37,12 @@ fn main() {
     )
     .unwrap();
 
-    network.sgd(training_data, Some(test_data), 30, 10, 0.25, Some("mnist results"));
+    network.sgd(
+        training_data,
+        Some(test_data),
+        30,
+        10,
+        0.25,
+        Some("mnist results"),
+    );
 }

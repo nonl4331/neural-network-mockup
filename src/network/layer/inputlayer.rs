@@ -1,4 +1,4 @@
-use crate::network::{change::LayerChange, Float, Regularisation};
+use crate::network::{Float, Regularisation};
 
 use super::LayerTrait;
 
@@ -11,15 +11,10 @@ impl LayerTrait for InputLayer {
     fn backward(
         &mut self,
         _: &[Float],
-        _: &mut LayerChange,
         error_input: &[Float],
-        weights: Vec<Vec<Float>>,
-    ) -> (Vec<f32>, Vec<Vec<f32>>) {
-        (error_input.to_vec(), weights)
-    }
-
-    fn empty_layer_change(&self) -> LayerChange {
-        LayerChange::None
+        weights: (Vec<Float>, [usize; 2]),
+    ) -> (Vec<Float>, Vec<Float>, [usize; 2]) {
+        (error_input.to_vec(), weights.0, weights.1)
     }
 
     fn forward(&mut self, input: Vec<Float>) {
@@ -36,11 +31,9 @@ impl LayerTrait for InputLayer {
         self.output.clone()
     }
 
-    fn neuron_count(&self) -> usize {
-        self.length
-    }
+    fn update(&mut self, _: Float, _: usize, _: &Regularisation) {}
 
-    fn update(&mut self, _: &LayerChange, _: Float, _: usize, _: &Regularisation) {}
+    fn update_change(&mut self, _: &[Float], _: &[Float]) {}
 }
 
 impl InputLayer {
