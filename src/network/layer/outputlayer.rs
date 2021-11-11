@@ -4,7 +4,7 @@ use crate::network::{ActivationFunction, CostFunction, Float, InitType, Regulari
 
 use crate::network::change::OutputLayerChange;
 
-use crate::network::utility::{outer_product_add, plus_equals_matrix_multiplied};
+use crate::network::utility::{outer_product_add, plus_equals_matrix_multiplied, scale_elements};
 
 extern crate openblas_src;
 
@@ -93,24 +93,26 @@ impl LayerTrait for OutputLayer {
     ) {
         match &self.change {
             Some(change) => match regularisation {
-                Regularisation::L1(_lambda) => {
-                    todo!()
-                    //let multiplier = -1.0 / mini_batch_size as Float;
-                    //self.weights *= 1.0 + learning_rate * lambda * multiplier;
-                    //self.weights += multiplier * change;
+                Regularisation::L1(lambda) => {
+                    let multiplier = -1.0 / mini_batch_size as Float;
+
+                    scale_elements(&mut self.weights, 1.0 + learning_rate * lambda * multiplier);
+
+                    plus_equals_matrix_multiplied(&mut self.weights, multiplier, &change.weights);
                 }
-                Regularisation::L2(_lambda) => {
-                    todo!()
-                    //let multiplier = -learning_rate / mini_batch_size as Float;
-                    //self.weights += multiplier * (change + lambda * weight.signum());
+                Regularisation::L2(lambda) => {
+                    let multiplier = -learning_rate / mini_batch_size as Float;
+
+                    // is there a more optimal way to do this?
+                    for (weight, change) in self.weights.iter_mut().zip(change.weights.iter()) {
+                        *weight += multiplier * (change + lambda * weight.signum());
+                    }
                 }
                 Regularisation::None => {
                     let multiplier = -learning_rate / mini_batch_size as Float;
 
-                    //self.weights += multiplier * self.change.unwrap().weights;
                     plus_equals_matrix_multiplied(&mut self.weights, multiplier, &change.weights);
 
-                    //self.bias += multiplier * self.change.unwrap().bias;
                     plus_equals_matrix_multiplied(&mut self.biases, multiplier, &change.biases);
                 }
             },

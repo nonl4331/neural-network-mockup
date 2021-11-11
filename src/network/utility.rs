@@ -1,4 +1,4 @@
-use blas::{saxpy, sgemv, sger};
+use blas::{saxpy, sgemv, sger, sscal};
 
 pub type Float = f32;
 
@@ -97,6 +97,13 @@ pub fn transpose_matrix_multiply_vec(
             1,
         );
         result.set_len(dim[1]);
+    }
+}
+
+// performs a *= multiplier;
+pub fn scale_elements(a: &mut [Float], multiplier: Float) {
+    unsafe {
+        sscal(a.len() as i32, multiplier, a, 1);
     }
 }
 
