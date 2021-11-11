@@ -18,7 +18,7 @@ fn main() {
 		),
 		output!(
 			ActivationFunction::Sigmoid,
-			CostFunction::Quadratic,
+			CostFunction::CrossEntropy,
 			InitType::NormalisedXavier,
 			30,
 			10
