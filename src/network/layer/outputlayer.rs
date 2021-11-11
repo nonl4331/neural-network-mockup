@@ -46,8 +46,14 @@ impl LayerTrait for OutputLayer {
 	fn forward(&mut self, input: Vec<Float>) {
 		assert_eq!(self.weight_dimensions[1], input.len());
 		self.z_values = self.biases.clone();
-		let dim = [self.weight_dimensions[0], self.weight_dimensions[0]];
-		matrix_multiply_sum(&self.weights, &input, dim, &mut self.z_values);
+
+		// change to matrix vector operation?
+		matrix_multiply_sum(
+			&self.weights,
+			&input,
+			self.weight_dimensions,
+			&mut self.z_values,
+		);
 
 		// is this optimal??
 		// perhaps have activation_function(z_values: &[]) -> Vec<>

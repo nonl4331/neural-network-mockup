@@ -2,6 +2,11 @@ use blas::{saxpy, sgemm, sgemv, sger, sscal};
 
 pub type Float = f32;
 
+/*
+Find BLAS function definitions here:
+http://www.netlib.org/blas/
+*/
+
 pub fn hadamard_product(a: &[Float], b: &[Float]) -> Vec<Float> {
 	a.iter().zip(b).map(|(&a, b)| a * b).collect()
 }
@@ -103,7 +108,7 @@ pub fn transpose_matrix_multiply_vec(
 	}
 }
 
-// performs C = x*A*B + y*C
+// performs C = A*B + C
 pub fn matrix_multiply_sum(
 	mat_a: &[Float],
 	mat_b: &[Float],
@@ -117,12 +122,12 @@ pub fn matrix_multiply_sum(
 			dim[0] as i32,
 			1,
 			dim[1] as i32,
-			1.0, // x
+			1.0,
 			mat_a,
 			dim[0] as i32,
 			mat_b,
 			dim[1] as i32,
-			1.0, // y
+			1.0,
 			result,
 			dim[1] as i32,
 		);
