@@ -4,6 +4,8 @@ version = "0.1.1"
 edition = "2018"
 
 [dependencies]
+blas = "0.22.0"
+openblas-src = "0.10.4"
 plotters = {version = "0.3.1", features = ["svg_backend"] }
 rand = "0.8.4"
 rand_distr = "0.4.2"

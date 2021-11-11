@@ -1,62 +1,55 @@
-use crate::network::{change::LayerChange, Float, Regularisation};
+use crate::network::{Float, Regularisation};
 
 use super::LayerTrait;
 
 pub struct InputLayer {
-    length: usize,
-    output: Vec<Float>,
+	length: usize,
+	output: Vec<Float>,
 }
 
 impl LayerTrait for InputLayer {
-    fn backward(
-        &mut self,
-        _: &[Float],
-        _: &mut LayerChange,
-        error_input: &[Float],
-        weights: Vec<Vec<Float>>,
-    ) -> (Vec<f32>, Vec<Vec<f32>>) {
-        (error_input.to_vec(), weights)
-    }
+	fn backward(
+		&mut self,
+		_: &[Float],
+		error_input: &[Float],
+		weights: (Vec<Float>, [usize; 2]),
+	) -> (Vec<Float>, Vec<Float>, [usize; 2]) {
+		(error_input.to_vec(), weights.0, weights.1)
+	}
 
-    fn empty_layer_change(&self) -> LayerChange {
-        LayerChange::None
-    }
+	fn forward(&mut self, input: Vec<Float>) {
+		assert_eq!(self.length, input.len());
 
-    fn forward(&mut self, input: Vec<Float>) {
-        assert_eq!(self.length, input.len());
+		self.output = input;
+	}
 
-        self.output = input;
-    }
+	fn last_output(&self) -> Vec<Float> {
+		self.output.clone()
+	}
 
-    fn last_output(&self) -> Vec<Float> {
-        self.output.clone()
-    }
+	fn last_z_values(&self) -> Vec<Float> {
+		self.output.clone()
+	}
 
-    fn last_z_values(&self) -> Vec<Float> {
-        self.output.clone()
-    }
+	fn update(&mut self, _: Float, _: usize, _: &Regularisation) {}
 
-    fn neuron_count(&self) -> usize {
-        self.length
-    }
-
-    fn update(&mut self, _: &LayerChange, _: Float, _: usize, _: &Regularisation) {}
+	fn update_change(&mut self, _: &[Float], _: &[Float]) {}
 }
 
 impl InputLayer {
-    pub fn new(length: usize) -> Self {
-        InputLayer {
-            length,
-            output: Vec::new(),
-        }
-    }
+	pub fn new(length: usize) -> Self {
+		InputLayer {
+			length,
+			output: Vec::new(),
+		}
+	}
 }
 
 #[macro_export]
 macro_rules! input {
-    ($length:expr) => {
-        neural_network::layer::Layer::InputLayer(
-            neural_network::layer::inputlayer::InputLayer::new($length),
-        )
-    };
+	($length:expr) => {
+		neural_network::layer::Layer::InputLayer(
+			neural_network::layer::inputlayer::InputLayer::new($length),
+		)
+	};
 }
