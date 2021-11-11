@@ -1,10 +1,8 @@
-use blas::sgemm;
-
-use crate::network::{ActivationFunction, CostFunction, Float, InitType, Regularisation};
-
 use crate::network::change::OutputLayerChange;
-
-use crate::network::utility::{outer_product_add, plus_equals_matrix_multiplied, scale_elements};
+use crate::network::utility::{
+	matrix_multiply_sum, outer_product_add, plus_equals_matrix_multiplied, scale_elements,
+};
+use crate::network::{ActivationFunction, CostFunction, Float, InitType, Regularisation};
 
 extern crate openblas_src;
 
@@ -48,23 +46,8 @@ impl LayerTrait for OutputLayer {
 	fn forward(&mut self, input: Vec<Float>) {
 		assert_eq!(self.weight_dimensions[1], input.len());
 		self.z_values = self.biases.clone();
-		unsafe {
-			sgemm(
-				b'N',
-				b'N',
-				self.weight_dimensions[0] as i32,
-				1,
-				self.weight_dimensions[1] as i32,
-				1.0,
-				&self.weights,
-				self.weight_dimensions[0] as i32,
-				&input,
-				self.weight_dimensions[1] as i32,
-				1.0,
-				&mut self.z_values,
-				self.weight_dimensions[1] as i32,
-			);
-		}
+		let dim = [self.weight_dimensions[0], self.weight_dimensions[0]];
+		matrix_multiply_sum(&self.weights, &input, dim, &mut self.z_values);
 
 		// is this optimal??
 		// perhaps have activation_function(z_values: &[]) -> Vec<>

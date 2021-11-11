@@ -1,4 +1,4 @@
-use blas::{saxpy, sgemv, sger, sscal};
+use blas::{saxpy, sgemm, sgemv, sger, sscal};
 
 pub type Float = f32;
 
@@ -19,11 +19,14 @@ pub fn max_index(nets: &[Float]) -> usize {
 	index
 }
 
+const NORMAL: u8 = b'N';
+const TRANSPOSE: u8 = b'T';
+
 // performs c += a * b
 pub fn matrix_vec_multiply_add(a: &[Float], b: &[Float], c: &mut [Float], dim: &[usize; 2]) {
 	unsafe {
 		sgemv(
-			b'N',
+			NORMAL,
 			dim[0] as i32,
 			dim[1] as i32,
 			1.0,
@@ -84,7 +87,7 @@ pub fn transpose_matrix_multiply_vec(
 	result.reserve_exact(dim[1]);
 	unsafe {
 		sgemv(
-			b'T',
+			TRANSPOSE,
 			dim[0] as i32,
 			dim[1] as i32,
 			1.0,
@@ -97,6 +100,32 @@ pub fn transpose_matrix_multiply_vec(
 			1,
 		);
 		result.set_len(dim[1]);
+	}
+}
+
+// performs C = x*A*B + y*C
+pub fn matrix_multiply_sum(
+	mat_a: &[Float],
+	mat_b: &[Float],
+	dim: [usize; 2],
+	result: &mut [Float],
+) {
+	unsafe {
+		sgemm(
+			NORMAL,
+			NORMAL,
+			dim[0] as i32,
+			1,
+			dim[1] as i32,
+			1.0, // x
+			mat_a,
+			dim[0] as i32,
+			mat_b,
+			dim[1] as i32,
+			1.0, // y
+			result,
+			dim[1] as i32,
+		);
 	}
 }
 
