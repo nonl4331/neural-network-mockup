@@ -24,8 +24,8 @@ impl LayerTrait for OutputLayer {
 		&mut self,
 		a: &[Float],
 		output: &[Float],
-		expected_output: (Vec<Float>, [usize; 2]),
-	) -> (Vec<Float>, Vec<Float>, [usize; 2]) {
+		expected_output: (Vec<Float>, [usize; 3]),
+	) -> (Vec<Float>, Vec<Float>, [usize; 3]) {
 		let expected_output = &expected_output.0;
 
 		let errors: Vec<Float> = output
@@ -40,7 +40,11 @@ impl LayerTrait for OutputLayer {
 
 		self.update_change(&errors, a);
 
-		(errors, self.weights.clone(), self.weight_dimensions)
+		(
+			errors,
+			self.weights.clone(),
+			[self.weight_dimensions[0], self.weight_dimensions[1], 1],
+		)
 	}
 
 	fn forward(&mut self, input: Vec<Float>) {

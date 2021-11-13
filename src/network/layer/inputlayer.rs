@@ -12,8 +12,8 @@ impl LayerTrait for InputLayer {
 		&mut self,
 		_: &[Float],
 		error_input: &[Float],
-		weights: (Vec<Float>, [usize; 2]),
-	) -> (Vec<Float>, Vec<Float>, [usize; 2]) {
+		weights: (Vec<Float>, [usize; 3]),
+	) -> (Vec<Float>, Vec<Float>, [usize; 3]) {
 		(error_input.to_vec(), weights.0, weights.1)
 	}
 

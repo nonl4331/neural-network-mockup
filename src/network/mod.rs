@@ -54,7 +54,7 @@ impl Network {
 		let (mut errors, mut weights, mut dim) = self.layers[len - 1].backward(
 			&outputs[outputs.len() - 2],
 			&output,
-			(expected_output.clone(), [o_len, 1]),
+			(expected_output.clone(), [o_len, 1, 1]),
 		);
 
 		for i in 0..(len - 1) {

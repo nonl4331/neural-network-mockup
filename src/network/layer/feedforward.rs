@@ -26,9 +26,13 @@ impl LayerTrait for FeedForward {
 		&mut self,
 		a: &[Float],
 		error_input: &[Float],
-		weights: (Vec<Float>, [usize; 2]),
-	) -> (Vec<Float>, Vec<Float>, [usize; 2]) {
+		weights: (Vec<Float>, [usize; 3]),
+	) -> (Vec<Float>, Vec<Float>, [usize; 3]) {
 		let mut c_da = Vec::new();
+
+		assert_eq!(weights.1[2], 1);
+
+		let weights = (weights.0, [weights.1[0], weights.1[1]]);
 
 		transpose_matrix_multiply_vec(&weights.0, error_input, weights.1, &mut c_da);
 
@@ -42,7 +46,11 @@ impl LayerTrait for FeedForward {
 
 		self.update_change(&errors, a);
 
-		(errors, self.weights.clone(), self.weight_dimensions)
+		(
+			errors,
+			self.weights.clone(),
+			[self.weight_dimensions[0], self.weight_dimensions[1], 1],
+		)
 	}
 
 	fn forward(&mut self, input: Vec<Float>) {

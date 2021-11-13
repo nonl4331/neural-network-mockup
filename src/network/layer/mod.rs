@@ -17,8 +17,8 @@ impl LayerTrait for Layer {
 		&mut self,
 		a: &[Float],
 		error_input: &[Float],
-		weights: (Vec<Float>, [usize; 2]),
-	) -> (Vec<Float>, Vec<Float>, [usize; 2]) {
+		weights: (Vec<Float>, [usize; 3]),
+	) -> (Vec<Float>, Vec<Float>, [usize; 3]) {
 		match self {
 			Layer::InputLayer(layer) => (*layer).backward(a, error_input, weights),
 			Layer::FeedForward(layer) => (*layer).backward(a, error_input, weights),
@@ -83,9 +83,9 @@ pub trait LayerTrait {
 		&mut self,
 		a: &[Float],
 		error_input: &[Float],
-		weights: (Vec<Float>, [usize; 2]),
+		weights: (Vec<Float>, [usize; 3]),
 		// errors, weights, dimensions_weights
-	) -> (Vec<Float>, Vec<Float>, [usize; 2]);
+	) -> (Vec<Float>, Vec<Float>, [usize; 3]);
 	fn forward(&mut self, input: Vec<Float>);
 	fn last_output(&self) -> Vec<Float>;
 	fn last_z_values(&self) -> Vec<Float>;
