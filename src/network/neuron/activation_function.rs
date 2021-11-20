@@ -1,5 +1,6 @@
 use crate::network::Float;
 
+#[derive(Copy, Clone)]
 pub enum ActivationFunction {
 	Sigmoid,
 	Softmax,

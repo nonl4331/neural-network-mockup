@@ -2,9 +2,19 @@ use crate::network::{Float, Regularisation};
 
 use super::LayerTrait;
 
+pub struct InputLayerInfo {
+	pub sizes: [usize; 3],
+}
+
 pub struct InputLayer {
 	length: usize,
 	output: Vec<Float>,
+}
+
+impl InputLayerInfo {
+	pub fn new(sizes: [usize; 3]) -> Self {
+		InputLayerInfo { sizes }
+	}
 }
 
 impl LayerTrait for InputLayer {
@@ -48,8 +58,8 @@ impl InputLayer {
 #[macro_export]
 macro_rules! input {
 	($length:expr) => {
-		neural_network::layer::Layer::InputLayer(
-			neural_network::layer::inputlayer::InputLayer::new($length),
+		neural_network::layer::LayerInfo::InputLayer(
+			neural_network::layer::inputlayer::InputLayerInfo::new([$length, 1, 1]),
 		)
 	};
 }
