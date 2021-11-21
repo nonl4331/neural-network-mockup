@@ -3,6 +3,7 @@ use crate::network::Float;
 use rand::{thread_rng, Rng};
 use rand_distr::{Distribution, Normal};
 
+#[derive(Copy, Clone)]
 pub enum InitType {
 	He,
 	NormalisedXavier,

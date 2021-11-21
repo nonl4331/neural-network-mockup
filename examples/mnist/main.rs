@@ -8,19 +8,13 @@ use mnist_import::parse_files;
 use neural_network::{ActivationFunction, CostFunction, InitType, Network};
 
 fn main() {
-	let mut network = Network::from_layers(vec![
+	let mut network = Network::new(vec![
 		input!(784),
-		feedforward!(
-			ActivationFunction::Sigmoid,
-			InitType::NormalisedXavier,
-			784,
-			30
-		),
+		feedforward!(ActivationFunction::Sigmoid, InitType::NormalisedXavier, 30),
 		output!(
 			ActivationFunction::Sigmoid,
 			CostFunction::CrossEntropy,
 			InitType::NormalisedXavier,
-			30,
 			10
 		),
 	]);

@@ -13,7 +13,10 @@ pub use neuron::{
 
 pub use utility::Float;
 use {
-	layer::{Layer, LayerTrait},
+	layer::{
+		feedforward::FeedForward, inputlayer::InputLayer, outputlayer::OutputLayer, Layer,
+		LayerInfo, LayerInfoTrait, LayerTrait,
+	},
 	utility::max_index,
 };
 
@@ -82,8 +85,69 @@ impl Network {
 		next_input
 	}
 
-	pub fn from_layers(layers: Vec<Layer>) -> Self {
+	fn from_layers(layers: Vec<Layer>) -> Self {
 		Network { layers }
+	}
+
+	pub fn new(layer_infos: Vec<LayerInfo>) -> Self {
+		let mut layers = Vec::new();
+		let info_len = layer_infos.len();
+
+		if info_len == 0 {
+			panic!("Can't create an empty Network!");
+		}
+
+		// handle input layer seperately
+		match &layer_infos[0] {
+			LayerInfo::InputLayer(info) => {
+				// note this will change when convolution layers get introduced which care about dimensionality
+				let input_length = info.sizes[0] * info.sizes[1] * info.sizes[2];
+				layers.push(Layer::InputLayer(InputLayer::new(input_length)));
+			}
+			_ => panic!("Attempting to create network where first layer isn't input!"),
+		}
+
+		let mut previous_layer = &layer_infos[0];
+
+		// next_layer might not be needed?
+		for (layer, _next_layer) in layer_infos[1..(info_len - 1)]
+			.iter()
+			.zip(&layer_infos[2..info_len])
+		{
+			// note this is variable to change as different network types are supported
+			match layer {
+				LayerInfo::InputLayer(_) => {
+					panic!("Attempting to create input layer in middle of network!")
+				}
+				LayerInfo::FeedForward(info) => layers.push(Layer::FeedForward(FeedForward::new(
+					info.activation_function,
+					info.init_type,
+					previous_layer.flattened_output(),
+					info.length,
+				))),
+
+				LayerInfo::OutputLayer(_) => {
+					panic!("Attempting to create output layer in middle of network!")
+				}
+			}
+
+			previous_layer = layer;
+		}
+
+		// handle output layer seperately
+		match &layer_infos[layer_infos.len() - 1] {
+			LayerInfo::OutputLayer(info) => layers.push(Layer::OutputLayer(OutputLayer::new(
+				info.activation_function,
+				info.cost_function,
+				info.init_type,
+				previous_layer.flattened_output(),
+				info.length,
+			))),
+
+			_ => panic!("Attempting to create network where first layer isn't input!"),
+		}
+
+		Network::from_layers(layers)
 	}
 
 	pub fn sgd(

@@ -11,6 +11,12 @@ extern crate openblas_src;
 
 use super::LayerTrait;
 
+pub struct FeedForwardInfo {
+	pub activation_function: ActivationFunction,
+	pub init_type: InitType,
+	pub length: usize,
+}
+
 pub struct FeedForward {
 	activation_function: ActivationFunction,
 	biases: Vec<Float>,
@@ -19,6 +25,20 @@ pub struct FeedForward {
 	weights: Vec<Float>,
 	weight_dimensions: [usize; 2],
 	z_values: Vec<Float>,
+}
+
+impl FeedForwardInfo {
+	pub fn new(
+		activation_function: ActivationFunction,
+		init_type: InitType,
+		length: usize,
+	) -> Self {
+		FeedForwardInfo {
+			activation_function,
+			init_type,
+			length,
+		}
+	}
 }
 
 impl LayerTrait for FeedForward {
@@ -168,12 +188,11 @@ impl FeedForward {
 
 #[macro_export]
 macro_rules! feedforward {
-	($activation_function:expr, $init_type:expr, $input_size:expr, $length:expr) => {
-		neural_network::layer::Layer::FeedForward(
-			neural_network::layer::feedforward::FeedForward::new(
+	($activation_function:expr, $init_type:expr, $length:expr) => {
+		neural_network::layer::LayerInfo::FeedForward(
+			neural_network::layer::feedforward::FeedForwardInfo::new(
 				$activation_function,
 				$init_type,
-				$input_size,
 				$length,
 			),
 		)

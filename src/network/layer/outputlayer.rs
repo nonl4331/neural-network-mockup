@@ -8,6 +8,13 @@ extern crate openblas_src;
 
 use super::LayerTrait;
 
+pub struct OutputLayerInfo {
+	pub activation_function: ActivationFunction,
+	pub cost_function: CostFunction,
+	pub init_type: InitType,
+	pub length: usize,
+}
+
 pub struct OutputLayer {
 	activation_function: ActivationFunction,
 	biases: Vec<Float>,
@@ -17,6 +24,22 @@ pub struct OutputLayer {
 	weights: Vec<Float>,
 	weight_dimensions: [usize; 2],
 	z_values: Vec<Float>,
+}
+
+impl OutputLayerInfo {
+	pub fn new(
+		activation_function: ActivationFunction,
+		cost_function: CostFunction,
+		init_type: InitType,
+		length: usize,
+	) -> Self {
+		OutputLayerInfo {
+			activation_function,
+			cost_function,
+			init_type,
+			length,
+		}
+	}
 }
 
 impl LayerTrait for OutputLayer {
@@ -161,13 +184,12 @@ impl OutputLayer {
 
 #[macro_export]
 macro_rules! output {
-	($activation_function:expr, $cost_function:expr, $init_type:expr, $input_size:expr, $length:expr) => {
-		neural_network::layer::Layer::OutputLayer(
-			neural_network::layer::outputlayer::OutputLayer::new(
+	($activation_function:expr, $cost_function:expr, $init_type:expr, $length:expr) => {
+		neural_network::layer::LayerInfo::OutputLayer(
+			neural_network::layer::outputlayer::OutputLayerInfo::new(
 				$activation_function,
 				$cost_function,
 				$init_type,
-				$input_size,
 				$length,
 			),
 		)

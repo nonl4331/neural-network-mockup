@@ -1,5 +1,6 @@
 use crate::network::{ActivationFunction, Float};
 
+#[derive(Copy, Clone)]
 pub enum CostFunction {
 	CrossEntropy,
 	Quadratic,

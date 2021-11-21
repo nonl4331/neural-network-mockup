@@ -4,12 +4,32 @@ pub mod outputlayer;
 
 use crate::network::{Float, Regularisation};
 
-use {feedforward::FeedForward, inputlayer::InputLayer, outputlayer::OutputLayer};
+use {
+	feedforward::{FeedForward, FeedForwardInfo},
+	inputlayer::{InputLayer, InputLayerInfo},
+	outputlayer::{OutputLayer, OutputLayerInfo},
+};
+
+pub enum LayerInfo {
+	FeedForward(FeedForwardInfo),
+	InputLayer(InputLayerInfo),
+	OutputLayer(OutputLayerInfo),
+}
 
 pub enum Layer {
 	FeedForward(FeedForward),
 	InputLayer(InputLayer),
 	OutputLayer(OutputLayer),
+}
+
+impl LayerInfoTrait for LayerInfo {
+	fn output(&self) -> [usize; 3] {
+		match self {
+			LayerInfo::FeedForward(info) => [info.length, 1, 1],
+			LayerInfo::InputLayer(info) => info.sizes,
+			LayerInfo::OutputLayer(info) => [info.length, 1, 1],
+		}
+	}
 }
 
 impl LayerTrait for Layer {
@@ -76,6 +96,15 @@ impl LayerTrait for Layer {
 			Layer::OutputLayer(layer) => (*layer).update_change(errors, a),
 		}
 	}
+}
+
+pub trait LayerInfoTrait {
+	fn flattened_output(&self) -> usize {
+		let output = self.output();
+		output[0] * output[1] * output[2]
+	}
+
+	fn output(&self) -> [usize; 3];
 }
 
 pub trait LayerTrait {
