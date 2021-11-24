@@ -6,8 +6,9 @@ use crate::network::{ActivationFunction, CostFunction, Float, InitType, Regulari
 
 extern crate openblas_src;
 
-use super::LayerTrait;
+use super::{LayerInfoTrait, LayerTrait};
 
+#[derive(Copy, Clone)]
 pub struct OutputLayerInfo {
 	pub activation_function: ActivationFunction,
 	pub cost_function: CostFunction,
@@ -16,10 +17,9 @@ pub struct OutputLayerInfo {
 }
 
 pub struct OutputLayer {
-	activation_function: ActivationFunction,
 	biases: Vec<Float>,
 	change: Option<OutputLayerChange>,
-	cost_function: CostFunction,
+	info: OutputLayerInfo,
 	output: Vec<Float>,
 	weights: Vec<Float>,
 	weight_dimensions: [usize; 2],
@@ -42,6 +42,12 @@ impl OutputLayerInfo {
 	}
 }
 
+impl LayerInfoTrait for OutputLayerInfo {
+	fn output(&self) -> [usize; 3] {
+		[self.length, 1, 1]
+	}
+}
+
 impl LayerTrait for OutputLayer {
 	fn backward(
 		&mut self,
@@ -56,8 +62,12 @@ impl LayerTrait for OutputLayer {
 			.zip(expected_output.iter())
 			.zip(self.z_values.iter())
 			.map(|((output, expected_output), z)| {
-				self.cost_function
-					.c_dz(&self.activation_function, output, expected_output, z)
+				self.info.cost_function.c_dz(
+					&self.info.activation_function,
+					output,
+					expected_output,
+					z,
+				)
 			})
 			.collect();
 
@@ -87,7 +97,7 @@ impl LayerTrait for OutputLayer {
 		let output = self
 			.z_values
 			.iter()
-			.map(|&z| self.activation_function.evaluate(z))
+			.map(|&z| self.info.activation_function.evaluate(z))
 			.collect();
 
 		self.output = output;
@@ -151,26 +161,19 @@ impl LayerTrait for OutputLayer {
 }
 
 impl OutputLayer {
-	pub fn new(
-		activation_function: ActivationFunction,
-		cost_function: CostFunction,
-		init_type: InitType,
-		input_size: usize,
-		length: usize,
-	) -> Self {
-		let biases = vec![0.0; length];
+	pub fn new(info: OutputLayerInfo, input_size: usize) -> Self {
+		let biases = vec![0.0; info.length];
 		let mut weights = Vec::new();
-		for _ in 0..length * input_size {
-			weights.push(init_type.generate_weight(input_size, length));
+		for _ in 0..info.length * input_size {
+			weights.push(info.init_type.generate_weight(input_size, info.length));
 		}
 
-		let weight_dimensions = [length, input_size];
+		let weight_dimensions = [info.length, input_size];
 
 		OutputLayer {
-			activation_function,
 			biases,
 			change: Some(OutputLayer::empty_layer_change(&weight_dimensions)),
-			cost_function,
+			info,
 			output: Vec::new(),
 			weights,
 			weight_dimensions,

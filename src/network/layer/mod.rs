@@ -25,9 +25,9 @@ pub enum Layer {
 impl LayerInfoTrait for LayerInfo {
 	fn output(&self) -> [usize; 3] {
 		match self {
-			LayerInfo::FeedForward(info) => [info.length, 1, 1],
-			LayerInfo::InputLayer(info) => info.sizes,
-			LayerInfo::OutputLayer(info) => [info.length, 1, 1],
+			LayerInfo::FeedForward(info) => info.output(),
+			LayerInfo::InputLayer(info) => info.output(),
+			LayerInfo::OutputLayer(info) => info.output(),
 		}
 	}
 }
@@ -40,9 +40,9 @@ impl LayerTrait for Layer {
 		weights: (Vec<Float>, [usize; 3]),
 	) -> (Vec<Float>, Vec<Float>, [usize; 3]) {
 		match self {
-			Layer::InputLayer(layer) => (*layer).backward(a, error_input, weights),
-			Layer::FeedForward(layer) => (*layer).backward(a, error_input, weights),
-			Layer::OutputLayer(layer) => (*layer).backward(a, error_input, weights),
+			Layer::InputLayer(layer) => layer.backward(a, error_input, weights),
+			Layer::FeedForward(layer) => layer.backward(a, error_input, weights),
+			Layer::OutputLayer(layer) => layer.backward(a, error_input, weights),
 		}
 	}
 
@@ -56,17 +56,17 @@ impl LayerTrait for Layer {
 
 	fn last_output(&self) -> Vec<Float> {
 		match self {
-			Layer::FeedForward(layer) => (*layer).last_output(),
-			Layer::InputLayer(layer) => (*layer).last_output(),
-			Layer::OutputLayer(layer) => (*layer).last_output(),
+			Layer::FeedForward(layer) => layer.last_output(),
+			Layer::InputLayer(layer) => layer.last_output(),
+			Layer::OutputLayer(layer) => layer.last_output(),
 		}
 	}
 
 	fn last_z_values(&self) -> Vec<Float> {
 		match self {
-			Layer::FeedForward(layer) => (*layer).last_z_values(),
-			Layer::InputLayer(layer) => (*layer).last_z_values(),
-			Layer::OutputLayer(layer) => (*layer).last_z_values(),
+			Layer::FeedForward(layer) => layer.last_z_values(),
+			Layer::InputLayer(layer) => layer.last_z_values(),
+			Layer::OutputLayer(layer) => layer.last_z_values(),
 		}
 	}
 
@@ -91,9 +91,9 @@ impl LayerTrait for Layer {
 
 	fn update_change(&mut self, errors: &[Float], a: &[Float]) {
 		match self {
-			Layer::FeedForward(layer) => (*layer).update_change(errors, a),
-			Layer::InputLayer(layer) => (*layer).update_change(errors, a),
-			Layer::OutputLayer(layer) => (*layer).update_change(errors, a),
+			Layer::FeedForward(layer) => layer.update_change(errors, a),
+			Layer::InputLayer(layer) => layer.update_change(errors, a),
+			Layer::OutputLayer(layer) => layer.update_change(errors, a),
 		}
 	}
 }

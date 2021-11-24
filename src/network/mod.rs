@@ -100,9 +100,7 @@ impl Network {
 		// handle input layer seperately
 		match &layer_infos[0] {
 			LayerInfo::InputLayer(info) => {
-				// note this will change when convolution layers get introduced which care about dimensionality
-				let input_length = info.sizes[0] * info.sizes[1] * info.sizes[2];
-				layers.push(Layer::InputLayer(InputLayer::new(input_length)));
+				layers.push(Layer::InputLayer(InputLayer::new(*info)));
 			}
 			_ => panic!("Attempting to create network where first layer isn't input!"),
 		}
@@ -120,10 +118,8 @@ impl Network {
 					panic!("Attempting to create input layer in middle of network!")
 				}
 				LayerInfo::FeedForward(info) => layers.push(Layer::FeedForward(FeedForward::new(
-					info.activation_function,
-					info.init_type,
+					*info,
 					previous_layer.flattened_output(),
-					info.length,
 				))),
 
 				LayerInfo::OutputLayer(_) => {
@@ -137,11 +133,8 @@ impl Network {
 		// handle output layer seperately
 		match &layer_infos[layer_infos.len() - 1] {
 			LayerInfo::OutputLayer(info) => layers.push(Layer::OutputLayer(OutputLayer::new(
-				info.activation_function,
-				info.cost_function,
-				info.init_type,
+				*info,
 				previous_layer.flattened_output(),
-				info.length,
 			))),
 
 			_ => panic!("Attempting to create network where first layer isn't input!"),

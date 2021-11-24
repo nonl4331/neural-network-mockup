@@ -9,18 +9,19 @@ use crate::network::utility::{
 
 extern crate openblas_src;
 
-use super::LayerTrait;
+use super::{LayerInfoTrait, LayerTrait};
 
+#[derive(Copy, Clone)]
 pub struct FeedForwardInfo {
-	pub activation_function: ActivationFunction,
-	pub init_type: InitType,
+	activation_function: ActivationFunction,
+	init_type: InitType,
 	pub length: usize,
 }
 
 pub struct FeedForward {
-	activation_function: ActivationFunction,
 	biases: Vec<Float>,
 	change: Option<FeedForwardChange>,
+	info: FeedForwardInfo,
 	output: Vec<Float>,
 	weights: Vec<Float>,
 	weight_dimensions: [usize; 2],
@@ -38,6 +39,12 @@ impl FeedForwardInfo {
 			init_type,
 			length,
 		}
+	}
+}
+
+impl LayerInfoTrait for FeedForwardInfo {
+	fn output(&self) -> [usize; 3] {
+		[self.length, 1, 1]
 	}
 }
 
@@ -59,7 +66,7 @@ impl LayerTrait for FeedForward {
 		let a_dz: Vec<Float> = self
 			.z_values
 			.iter()
-			.map(|&z| self.activation_function.derivative(z))
+			.map(|&z| self.info.activation_function.derivative(z))
 			.collect();
 
 		let errors = hadamard_product(&c_da, &a_dz);
@@ -89,7 +96,7 @@ impl LayerTrait for FeedForward {
 		let output = self
 			.z_values
 			.iter()
-			.map(|&z| self.activation_function.evaluate(z))
+			.map(|&z| self.info.activation_function.evaluate(z))
 			.collect();
 
 		self.output = output;
@@ -156,24 +163,19 @@ impl LayerTrait for FeedForward {
 }
 
 impl FeedForward {
-	pub fn new(
-		activation_function: ActivationFunction,
-		init_type: InitType,
-		input_size: usize,
-		length: usize,
-	) -> Self {
-		let biases = vec![0.0; length];
+	pub fn new(info: FeedForwardInfo, input_size: usize) -> Self {
+		let biases = vec![0.0; info.length];
 		let mut weights = Vec::new();
-		for _ in 0..length * input_size {
-			weights.push(init_type.generate_weight(input_size, length));
+		for _ in 0..info.length * input_size {
+			weights.push(info.init_type.generate_weight(input_size, info.length));
 		}
 
-		let weight_dimensions = [length, input_size];
+		let weight_dimensions = [info.length, input_size];
 
 		FeedForward {
-			activation_function,
 			biases,
 			change: Some(FeedForward::empty_layer_change(&weight_dimensions)),
+			info,
 			output: Vec::new(),
 			weights,
 			weight_dimensions,

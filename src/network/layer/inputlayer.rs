@@ -1,19 +1,26 @@
 use crate::network::{Float, Regularisation};
 
-use super::LayerTrait;
+use super::{LayerInfoTrait, LayerTrait};
 
+#[derive(Copy, Clone)]
 pub struct InputLayerInfo {
 	pub sizes: [usize; 3],
 }
 
 pub struct InputLayer {
-	length: usize,
+	info: InputLayerInfo,
 	output: Vec<Float>,
 }
 
 impl InputLayerInfo {
 	pub fn new(sizes: [usize; 3]) -> Self {
 		InputLayerInfo { sizes }
+	}
+}
+
+impl LayerInfoTrait for InputLayerInfo {
+	fn output(&self) -> [usize; 3] {
+		self.sizes
 	}
 }
 
@@ -28,7 +35,7 @@ impl LayerTrait for InputLayer {
 	}
 
 	fn forward(&mut self, input: Vec<Float>) {
-		assert_eq!(self.length, input.len());
+		assert_eq!(self.info.flattened_output(), input.len());
 
 		self.output = input;
 	}
@@ -47,9 +54,9 @@ impl LayerTrait for InputLayer {
 }
 
 impl InputLayer {
-	pub fn new(length: usize) -> Self {
+	pub fn new(info: InputLayerInfo) -> Self {
 		InputLayer {
-			length,
+			info,
 			output: Vec::new(),
 		}
 	}
