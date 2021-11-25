@@ -11,6 +11,12 @@ extern crate openblas_src;
 
 use super::{LayerInfoTrait, LayerTrait};
 
+pub struct FeedForwardData {
+	biases: Vec<Float>,
+	weights: Vec<Float>,
+	weight_dimensions: [usize; 2],
+}
+
 #[derive(Copy, Clone)]
 pub struct FeedForwardInfo {
 	activation_function: ActivationFunction,
@@ -18,14 +24,41 @@ pub struct FeedForwardInfo {
 	pub length: usize,
 }
 
+pub struct FeedForwardOutput {
+	after_activation: Vec<Float>,
+	before_activation: Vec<Float>,
+}
+
 pub struct FeedForward {
-	biases: Vec<Float>,
 	change: Option<FeedForwardChange>,
+	data: FeedForwardData,
 	info: FeedForwardInfo,
-	output: Vec<Float>,
-	weights: Vec<Float>,
-	weight_dimensions: [usize; 2],
-	z_values: Vec<Float>,
+	outputs: FeedForwardOutput,
+}
+
+impl FeedForwardData {
+	pub fn new(init_type: InitType, weight_dimensions: [usize; 2]) -> Self {
+		let biases = vec![0.0; weight_dimensions[0]];
+		let mut weights = Vec::new();
+		for _ in 0..(weight_dimensions[0] * weight_dimensions[1]) {
+			weights.push(init_type.generate_weight(weight_dimensions[1], weight_dimensions[0]));
+		}
+
+		FeedForwardData {
+			biases,
+			weights,
+			weight_dimensions,
+		}
+	}
+}
+
+impl FeedForwardOutput {
+	pub fn new() -> Self {
+		FeedForwardOutput {
+			after_activation: Vec::new(),
+			before_activation: Vec::new(),
+		}
+	}
 }
 
 impl FeedForwardInfo {
@@ -64,7 +97,8 @@ impl LayerTrait for FeedForward {
 		transpose_matrix_multiply_vec(&weights.0, error_input, weights.1, &mut c_da);
 
 		let a_dz: Vec<Float> = self
-			.z_values
+			.outputs
+			.before_activation
 			.iter()
 			.map(|&z| self.info.activation_function.derivative(z))
 			.collect();
@@ -75,39 +109,44 @@ impl LayerTrait for FeedForward {
 
 		(
 			errors,
-			self.weights.clone(),
-			[self.weight_dimensions[0], self.weight_dimensions[1], 1],
+			self.data.weights.clone(),
+			[
+				self.data.weight_dimensions[0],
+				self.data.weight_dimensions[1],
+				1,
+			],
 		)
 	}
 
 	fn forward(&mut self, input: Vec<Float>) {
-		assert_eq!(self.weight_dimensions[1], input.len());
+		assert_eq!(self.data.weight_dimensions[1], input.len());
 
-		self.z_values = self.biases.clone();
+		self.outputs.before_activation = self.data.biases.clone();
 		matrix_vec_multiply_add(
-			&self.weights,
+			&self.data.weights,
 			&input,
-			&mut self.z_values,
-			&self.weight_dimensions,
+			&mut self.outputs.before_activation,
+			&self.data.weight_dimensions,
 		);
 
 		// is this optimal??
 		// perhaps have activation_function(z_values: &[]) -> Vec<>
 		let output = self
-			.z_values
+			.outputs
+			.before_activation
 			.iter()
 			.map(|&z| self.info.activation_function.evaluate(z))
 			.collect();
 
-		self.output = output;
+		self.outputs.after_activation = output;
 	}
 
 	fn last_output(&self) -> Vec<Float> {
-		self.output.clone()
+		self.outputs.after_activation.clone()
 	}
 
 	fn last_z_values(&self) -> Vec<Float> {
-		self.z_values.clone()
+		self.outputs.before_activation.clone()
 	}
 
 	fn update(
@@ -121,33 +160,51 @@ impl LayerTrait for FeedForward {
 				Regularisation::L1(lambda) => {
 					let multiplier = -1.0 / mini_batch_size as Float;
 
-					scale_elements(&mut self.weights, 1.0 + learning_rate * lambda * multiplier);
+					scale_elements(
+						&mut self.data.weights,
+						1.0 + learning_rate * lambda * multiplier,
+					);
 
-					plus_equals_matrix_multiplied(&mut self.weights, multiplier, &change.weights);
+					plus_equals_matrix_multiplied(
+						&mut self.data.weights,
+						multiplier,
+						&change.weights,
+					);
 				}
 				Regularisation::L2(lambda) => {
 					let multiplier = -learning_rate / mini_batch_size as Float;
 
 					// is there a more optimal way to do this?
-					for (weight, change) in self.weights.iter_mut().zip(change.weights.iter()) {
+					for (weight, change) in self.data.weights.iter_mut().zip(change.weights.iter())
+					{
 						*weight += multiplier * (change + lambda * weight.signum());
 					}
 				}
 				Regularisation::None => {
 					let multiplier = -learning_rate / mini_batch_size as Float;
 
-					plus_equals_matrix_multiplied(&mut self.weights, multiplier, &change.weights);
+					plus_equals_matrix_multiplied(
+						&mut self.data.weights,
+						multiplier,
+						&change.weights,
+					);
 
-					plus_equals_matrix_multiplied(&mut self.biases, multiplier, &change.biases);
+					plus_equals_matrix_multiplied(
+						&mut self.data.biases,
+						multiplier,
+						&change.biases,
+					);
 				}
 			},
 			None => {}
 		}
-		self.change = Some(FeedForward::empty_layer_change(&self.weight_dimensions));
+		self.change = Some(FeedForward::empty_layer_change(
+			&self.data.weight_dimensions,
+		));
 	}
 
 	fn update_change(&mut self, errors: &[Float], a: &[Float]) {
-		assert_eq!(self.weight_dimensions[0], errors.len());
+		assert_eq!(self.data.weight_dimensions[0], errors.len());
 		// On entry to SGER   parameter number  9 had an illegal value
 		// prob need to write unit tests for backwards
 		let change = self.change.as_mut().unwrap();
@@ -164,22 +221,15 @@ impl LayerTrait for FeedForward {
 
 impl FeedForward {
 	pub fn new(info: FeedForwardInfo, input_size: usize) -> Self {
-		let biases = vec![0.0; info.length];
-		let mut weights = Vec::new();
-		for _ in 0..info.length * input_size {
-			weights.push(info.init_type.generate_weight(input_size, info.length));
-		}
-
 		let weight_dimensions = [info.length, input_size];
 
+		let data = FeedForwardData::new(info.init_type, weight_dimensions);
+
 		FeedForward {
-			biases,
 			change: Some(FeedForward::empty_layer_change(&weight_dimensions)),
+			data,
 			info,
-			output: Vec::new(),
-			weights,
-			weight_dimensions,
-			z_values: Vec::new(),
+			outputs: FeedForwardOutput::new(),
 		}
 	}
 

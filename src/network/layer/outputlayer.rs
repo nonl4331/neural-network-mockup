@@ -8,6 +8,12 @@ extern crate openblas_src;
 
 use super::{LayerInfoTrait, LayerTrait};
 
+pub struct OutputLayerData {
+	biases: Vec<Float>,
+	weights: Vec<Float>,
+	weight_dimensions: [usize; 2],
+}
+
 #[derive(Copy, Clone)]
 pub struct OutputLayerInfo {
 	pub activation_function: ActivationFunction,
@@ -16,14 +22,41 @@ pub struct OutputLayerInfo {
 	pub length: usize,
 }
 
+pub struct OutputLayerOutput {
+	after_activation: Vec<Float>,
+	before_activation: Vec<Float>,
+}
+
 pub struct OutputLayer {
-	biases: Vec<Float>,
 	change: Option<OutputLayerChange>,
+	data: OutputLayerData,
 	info: OutputLayerInfo,
-	output: Vec<Float>,
-	weights: Vec<Float>,
-	weight_dimensions: [usize; 2],
-	z_values: Vec<Float>,
+	outputs: OutputLayerOutput,
+}
+
+impl OutputLayerData {
+	pub fn new(init_type: InitType, weight_dimensions: [usize; 2]) -> Self {
+		let biases = vec![0.0; weight_dimensions[0]];
+		let mut weights = Vec::new();
+		for _ in 0..(weight_dimensions[0] * weight_dimensions[1]) {
+			weights.push(init_type.generate_weight(weight_dimensions[1], weight_dimensions[0]));
+		}
+
+		OutputLayerData {
+			biases,
+			weights,
+			weight_dimensions,
+		}
+	}
+}
+
+impl OutputLayerOutput {
+	pub fn new() -> Self {
+		OutputLayerOutput {
+			after_activation: Vec::new(),
+			before_activation: Vec::new(),
+		}
+	}
 }
 
 impl OutputLayerInfo {
@@ -60,7 +93,7 @@ impl LayerTrait for OutputLayer {
 		let errors: Vec<Float> = output
 			.iter()
 			.zip(expected_output.iter())
-			.zip(self.z_values.iter())
+			.zip(self.outputs.before_activation.iter())
 			.map(|((output, expected_output), z)| {
 				self.info.cost_function.c_dz(
 					&self.info.activation_function,
@@ -75,40 +108,45 @@ impl LayerTrait for OutputLayer {
 
 		(
 			errors,
-			self.weights.clone(),
-			[self.weight_dimensions[0], self.weight_dimensions[1], 1],
+			self.data.weights.clone(),
+			[
+				self.data.weight_dimensions[0],
+				self.data.weight_dimensions[1],
+				1,
+			],
 		)
 	}
 
 	fn forward(&mut self, input: Vec<Float>) {
-		assert_eq!(self.weight_dimensions[1], input.len());
-		self.z_values = self.biases.clone();
+		assert_eq!(self.data.weight_dimensions[1], input.len());
+		self.outputs.before_activation = self.data.biases.clone();
 
 		// change to matrix vector operation?
 		matrix_multiply_sum(
-			&self.weights,
+			&self.data.weights,
 			&input,
-			self.weight_dimensions,
-			&mut self.z_values,
+			self.data.weight_dimensions,
+			&mut self.outputs.before_activation,
 		);
 
 		// is this optimal??
-		// perhaps have activation_function(z_values: &[]) -> Vec<>
+		// perhaps have activation_function(outputs.before_activation: &[]) -> Vec<>
 		let output = self
-			.z_values
+			.outputs
+			.before_activation
 			.iter()
 			.map(|&z| self.info.activation_function.evaluate(z))
 			.collect();
 
-		self.output = output;
+		self.outputs.after_activation = output;
 	}
 
 	fn last_output(&self) -> Vec<Float> {
-		self.output.clone()
+		self.outputs.after_activation.clone()
 	}
 
 	fn last_z_values(&self) -> Vec<Float> {
-		self.z_values.clone()
+		self.outputs.before_activation.clone()
 	}
 
 	fn update(
@@ -122,29 +160,47 @@ impl LayerTrait for OutputLayer {
 				Regularisation::L1(lambda) => {
 					let multiplier = -1.0 / mini_batch_size as Float;
 
-					scale_elements(&mut self.weights, 1.0 + learning_rate * lambda * multiplier);
+					scale_elements(
+						&mut self.data.weights,
+						1.0 + learning_rate * lambda * multiplier,
+					);
 
-					plus_equals_matrix_multiplied(&mut self.weights, multiplier, &change.weights);
+					plus_equals_matrix_multiplied(
+						&mut self.data.weights,
+						multiplier,
+						&change.weights,
+					);
 				}
 				Regularisation::L2(lambda) => {
 					let multiplier = -learning_rate / mini_batch_size as Float;
 
 					// is there a more optimal way to do this?
-					for (weight, change) in self.weights.iter_mut().zip(change.weights.iter()) {
+					for (weight, change) in self.data.weights.iter_mut().zip(change.weights.iter())
+					{
 						*weight += multiplier * (change + lambda * weight.signum());
 					}
 				}
 				Regularisation::None => {
 					let multiplier = -learning_rate / mini_batch_size as Float;
 
-					plus_equals_matrix_multiplied(&mut self.weights, multiplier, &change.weights);
+					plus_equals_matrix_multiplied(
+						&mut self.data.weights,
+						multiplier,
+						&change.weights,
+					);
 
-					plus_equals_matrix_multiplied(&mut self.biases, multiplier, &change.biases);
+					plus_equals_matrix_multiplied(
+						&mut self.data.biases,
+						multiplier,
+						&change.biases,
+					);
 				}
 			},
 			None => {}
 		}
-		self.change = Some(OutputLayer::empty_layer_change(&self.weight_dimensions));
+		self.change = Some(OutputLayer::empty_layer_change(
+			&self.data.weight_dimensions,
+		));
 	}
 
 	fn update_change(&mut self, errors: &[Float], a: &[Float]) {
@@ -162,22 +218,15 @@ impl LayerTrait for OutputLayer {
 
 impl OutputLayer {
 	pub fn new(info: OutputLayerInfo, input_size: usize) -> Self {
-		let biases = vec![0.0; info.length];
-		let mut weights = Vec::new();
-		for _ in 0..info.length * input_size {
-			weights.push(info.init_type.generate_weight(input_size, info.length));
-		}
-
 		let weight_dimensions = [info.length, input_size];
 
+		let data = OutputLayerData::new(info.init_type, weight_dimensions);
+
 		OutputLayer {
-			biases,
 			change: Some(OutputLayer::empty_layer_change(&weight_dimensions)),
+			data,
 			info,
-			output: Vec::new(),
-			weights,
-			weight_dimensions,
-			z_values: Vec::new(),
+			outputs: OutputLayerOutput::new(),
 		}
 	}
 	fn empty_layer_change(weight_dim: &[usize; 2]) -> OutputLayerChange {
